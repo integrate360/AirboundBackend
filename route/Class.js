@@ -18,7 +18,7 @@ router.post(
 );
 
 router.put(
-  "/classes",
+  "/classes/:id",
   authMiddleware,
   isAdmin,
   upload.single("image"),
@@ -27,6 +27,6 @@ router.put(
 
 router.get("/classes", getClasses);
 router.get("/class/:id", getClassById);
-router.delete("/classes", authMiddleware, isAdmin, deleteClass);
+router.delete("/classes/:id", authMiddleware, isAdmin, deleteClass);
 
 module.exports = router;

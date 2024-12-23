@@ -24,6 +24,8 @@ app.use(errorHandler);
 
 app.use("/api", require("./route/Admin"));
 app.use("/api", require("./route/Class"));
+app.use("/api", require("./route/Advertisement"));
+app.use("/api", require("./route/Category"));
 
 // running on port
 app.listen(process.env.PORT, () => {
