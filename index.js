@@ -27,6 +27,7 @@ app.use("/api", require("./route/Class"));
 app.use("/api", require("./route/Advertisement"));
 app.use("/api", require("./route/Category"));
 app.use("/api", require("./route/User"));
+app.use("/api", require("./route/Booking"));
 
 // running on port
 app.listen(process.env.PORT, () => {
