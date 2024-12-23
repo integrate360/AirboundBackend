@@ -23,6 +23,7 @@ app.use(coookieParser());
 app.use(errorHandler);
 
 app.use("/api", require("./route/Admin"));
+app.use("/api", require("./route/Class"));
 
 // running on port
 app.listen(process.env.PORT, () => {

@@ -17,9 +17,11 @@ var ClassSchema = new mongoose.Schema(
     },
     //TODO the Trainers
     trainers: {},
+    image: { type: String },
     maxPeople: { type: Number },
     locations: { type: [String] },
     packages: [{ days: { type: Number }, duration: { type: Number } }],
+    active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
