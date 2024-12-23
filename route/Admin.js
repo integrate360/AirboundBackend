@@ -1,5 +1,5 @@
-const { viewContact, adminLogin } = require("../controller/Admin");
-const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
+const { viewContact, adminLogin } = require("../controller/Admin.js");
+const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();
 const { upload } = require("../utils/uploadImg.js");
 // Admin routes
