@@ -10,11 +10,12 @@ var ClassSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // TODO  availability
     availability: {
-      type: String,
+      type: [Number],
       required: true,
     },
+    time: { type: String, required: true },
+    duration: { type: Number, required: true },
     //TODO the Trainers
     trainers: {},
     image: { type: String },
