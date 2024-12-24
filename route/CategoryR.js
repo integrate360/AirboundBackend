@@ -7,12 +7,13 @@ const {
   updateCategory,
   deleteCategory,
 } = require("../controller/CategoryC.js");
+const { upload } = require("../utils/uploadImg.js");
 
 // Routes
-router.post("/category/", authMiddleware, isAdmin, createCategory);
+router.post("/category/", upload.single("image"), createCategory);
 router.get("/category/", getAllCategories);
 router.get("/category/:id", authMiddleware, isAdmin, getCategoryById);
 router.put("/category/:id", authMiddleware, isAdmin, updateCategory);
-router.delete("/category/:id", authMiddleware, isAdmin, deleteCategory);
+router.delete("/category/:id", deleteCategory);
 
 module.exports = router;

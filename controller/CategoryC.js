@@ -4,17 +4,24 @@ const Category = require("../model/CategoryM");
 // Create a category
 const createCategory = AsyncHandler(async (req, res) => {
   const { title, description } = req.body;
-
+  let imgPath = "";
+  if (req.file) {
+    imgPath = req.file.filename;
+  }
   // Validate required fields
   if (!title || !description) {
     throw new Error("Title and description are required");
   }
 
   // Create a new category
-  const newCategory = await Category.create({ title, description });
+  const newCategory = await Category.create({
+    title,
+    description,
+    image: imgPath,
+  });
 
   // Send the response
-  res.status(201).json({
+  res.status(200).json({
     success: true,
     message: "Category created successfully",
     data: newCategory,
