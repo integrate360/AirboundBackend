@@ -1,5 +1,5 @@
 const AsyncHandler = require("express-async-handler");
-const Advertisement = require("../model/Advertisement");
+const Advertisement = require("../model/AdvertisementM");
 
 // Create an advertisement
 const createAdvertisement = AsyncHandler(async (req, res) => {

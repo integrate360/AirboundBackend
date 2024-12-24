@@ -6,7 +6,7 @@ const {
   getCategoryById,
   updateCategory,
   deleteCategory,
-} = require("../controller/Category");
+} = require("../controller/CategoryC.js");
 
 // Routes
 router.post("/category/", authMiddleware, isAdmin, createCategory);

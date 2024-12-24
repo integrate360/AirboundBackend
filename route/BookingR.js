@@ -6,7 +6,7 @@ const {
   getBookingById,
   updateBooking,
   deleteBooking,
-} = require("../controller/Booking");
+} = require("../controller/BookingC");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
 // Routes

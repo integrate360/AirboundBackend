@@ -1,7 +1,7 @@
 const AsyncHandler = require("express-async-handler");
-const Booking = require("../model/Booking");
-const Class = require("../model/Class");
-const User = require("../model/User");
+const Booking = require("../model/BookingM");
+const Class = require("../model/ClassM");
+const User = require("../model/UserM");
 
 // Create a booking
 const createBooking = AsyncHandler(async (req, res) => {

@@ -6,7 +6,7 @@ const {
   getPaymentById,
   updatePayment,
   deletePayment,
-} = require("../controller/Payment");
+} = require("../controller/PaymentC");
 const { isAdmin, authMiddleware } = require("../middleware/authMiddleware");
 
 // Routes

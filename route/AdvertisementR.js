@@ -6,7 +6,7 @@ const {
   getAdvertisementById,
   updateAdvertisement,
   deleteAdvertisement,
-} = require("../controller/Advertisement");
+} = require("../controller/AdvertisementC.js");
 const { upload } = require("../utils/uploadImg.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 

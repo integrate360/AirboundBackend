@@ -1,8 +1,8 @@
 const AsyncHandler = require("express-async-handler");
-const Payment = require("../models/Payment");
-const Booking = require("../models/Booking");
-const Class = require("../models/Class");
-const User = require("../models/User");
+const Payment = require("../model/PaymentM");
+const Booking = require("../model/BookingM");
+const Class = require("../model/ClassM");
+const User = require("../model/UserM");
 
 // Create a payment
 const createPayment = AsyncHandler(async (req, res) => {

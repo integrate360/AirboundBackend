@@ -1,7 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
-const Contact = require("../model/Contact.js");
-const Admin = require("../model/Admin");
+const Contact = require("../model/ContactM.js");
+const Admin = require("../model/AdminM.js");
 const genrateToken = require("../utils/genrateToken.js");
 // admin login
 const adminLogin = asyncHandler(async (req, res) => {

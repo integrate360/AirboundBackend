@@ -4,7 +4,7 @@ const {
   getClassById,
   createClass,
   getClasses,
-} = require("../controller/Class.js");
+} = require("../controller/ClassC.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();
 const { upload } = require("../utils/uploadImg.js");

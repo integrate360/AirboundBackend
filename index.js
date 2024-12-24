@@ -23,13 +23,13 @@ app.use(coookieParser());
 app.use(errorHandler);
 
 // custome routes
-app.use("/api", require("./route/Admin"));
-app.use("/api", require("./route/Class"));
-app.use("/api", require("./route/Advertisement"));
-app.use("/api", require("./route/Category"));
-app.use("/api", require("./route/User"));
-app.use("/api", require("./route/Booking"));
-app.use("/api", require("./route/Payment"));
+app.use("/api", require("./route/AdminR.js"));
+app.use("/api", require("./route/ClassR.js"));
+app.use("/api", require("./route/AdvertisementR.js"));
+app.use("/api", require("./route/CategoryR.js"));
+app.use("/api", require("./route/UserR.js"));
+app.use("/api", require("./route/BookingR.js"));
+app.use("/api", require("./route/PaymentR.js"));
 
 // running on port
 app.listen(process.env.PORT, () => {

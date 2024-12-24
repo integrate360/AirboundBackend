@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const User = require("../model/User");
+const User = require("../model/UserM");
 const bcrypt = require("bcrypt");
 const genrateToken = require("../utils/genrateToken");
 // login

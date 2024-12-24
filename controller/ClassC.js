@@ -1,5 +1,5 @@
 const AsyncHandler = require("express-async-handler");
-const Class = require("../model/Class");
+const Class = require("../model/ClassM");
 
 const createClass = AsyncHandler(async (req, res) => {
   try {
