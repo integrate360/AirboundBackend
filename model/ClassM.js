@@ -16,8 +16,7 @@ var ClassSchema = new mongoose.Schema(
     },
     time: { type: String, required: true },
     duration: { type: Number, required: true },
-    //TODO the Trainers
-    trainers: {},
+    trainers: [{ name: String, image: String, description: String }],
     image: { type: String },
     maxPeople: { type: Number },
     locations: { type: [String] },
