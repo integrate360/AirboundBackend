@@ -7,12 +7,19 @@ const {
   updateStaff,
   deleteStaff,
 } = require("../controller/StaffC.js");
+const { upload } = require("../utils/uploadImg.js");
 
 // Routes
-router.post("/staff/", authMiddleware, isAdmin, createStaff);
+router.post(
+  "/staff/",
+  //   authMiddleware,
+  //   isAdmin,
+  upload.single("image"),
+  createStaff
+);
 router.get("/staff/", getAllStaffs);
 router.get("/staff/:id", authMiddleware, isAdmin, getStaffById);
 router.put("/staff/:id", authMiddleware, isAdmin, updateStaff);
-router.delete("/staff/:id", authMiddleware, isAdmin, deleteStaff);
+router.delete("/staff/:id", deleteStaff);
 
 module.exports = router;

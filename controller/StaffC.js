@@ -3,18 +3,22 @@ const Staff = require("../model/StaffM");
 
 // Create a category
 const createStaff = AsyncHandler(async (req, res) => {
-  const { title, description } = req.body;
-
+  const { name, description } = req.body;
+  console.log(req.body);
+  let imgPath = "";
+  if (req.file) {
+    imgPath = req.file.filename;
+  }
   // Validate required fields
-  if (!title || !description) {
-    throw new Error("Title and description are required");
+  if (!name || !description) {
+    throw new Error("name, image and description  are required");
   }
 
   // Create a new category
-  const newStaff = await Staff.create({ title, description });
+  const newStaff = await Staff.create({ name, description, image: imgPath });
 
   // Send the response
-  res.status(201).json({
+  res.status(200).json({
     success: true,
     message: "Staff created successfully",
     data: newStaff,
