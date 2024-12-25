@@ -1,9 +1,9 @@
-const { viewContact, adminLogin } = require("../controller/AdminC.js");
+const { adminLogin, registerAdmin } = require("../controller/AdminC.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();
 const { upload } = require("../utils/uploadImg.js");
 // Admin routes
-router.post("/login", adminLogin);
-router.get("/view-contacts", authMiddleware, isAdmin, viewContact);
+router.post("/admin/login", adminLogin);
+router.post("/admin/register", registerAdmin);
 
 module.exports = router;
