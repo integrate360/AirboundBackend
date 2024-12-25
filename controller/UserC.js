@@ -76,8 +76,7 @@ const getUser = asyncHandler(async (req, res) => {
 });
 const deleteUser = asyncHandler(async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    await user.remove();
+    const user = await User.findByIdAndDelete(req.params.id);
     res.send({ message: "User removed" });
   } catch (error) {
     res.status(400).send({ error: error.message });
