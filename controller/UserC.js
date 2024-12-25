@@ -63,6 +63,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find({});
     res.send(users);
   } catch (error) {
+    console.log(error);
     res.status(400).send({ error: error.message });
   }
 });
