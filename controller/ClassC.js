@@ -2,13 +2,23 @@ const AsyncHandler = require("express-async-handler");
 const Class = require("../model/ClassM");
 
 const createClass = AsyncHandler(async (req, res) => {
+  const { packages, locations, trainers, availability } = req.body;
   try {
-    let imgPath = "";
-    if (req.file) {
-      imgPath = req.file.filename;
+    let imgPath = [];
+    if (req.files) {
+      for (let i = 0; i < req.files.length; i++) {
+        imgPath.push(req.files[i].filename);
+      }
     }
     // create new Class
-    const newClass = new Class({ ...req.body, image: imgPath });
+    const newClass = new Class({
+      ...req.body,
+      packages: JSON.parse(packages),
+      locations: JSON.parse(locations),
+      trainers: JSON.parse(trainers),
+      availability: JSON.parse(availability),
+      image: imgPath,
+    });
     await newClass.save(); // saving in DB
 
     // send the response
@@ -23,7 +33,9 @@ const createClass = AsyncHandler(async (req, res) => {
 const getClasses = AsyncHandler(async (req, res) => {
   try {
     // get all classes
-    const classes = await Class.find({ active: true });
+    const classes = await Class.find({ active: true })
+      .populate("category")
+      .populate("trainers");
 
     // send the response
     res

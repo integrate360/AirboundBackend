@@ -10,14 +10,16 @@ var ClassSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    availability: {
-      type: [Number],
-      required: true,
-    },
+    availability: [
+      {
+        type: Number,
+        required: true,
+      },
+    ],
     time: { type: String, required: true },
     duration: { type: Number, required: true },
     trainers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Staff" }],
-    image: { type: String },
+    image: [{ type: String }],
     maxPeople: { type: Number },
     locations: { type: [String] },
     packages: [

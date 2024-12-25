@@ -11,9 +11,9 @@ const { upload } = require("../utils/uploadImg.js");
 
 router.post(
   "/class",
-  authMiddleware,
-  isAdmin,
-  upload.single("image"),
+  // authMiddleware,
+  // isAdmin,
+  upload.array("images"),
   createClass
 );
 
@@ -27,6 +27,6 @@ router.put(
 
 router.get("/classes", getClasses);
 router.get("/class/:id", getClassById);
-router.delete("/classes/:id", authMiddleware, isAdmin, deleteClass);
+router.delete("/class/:id", deleteClass);
 
 module.exports = router;
