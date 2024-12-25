@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const User = require("../model/UserM");
 const bcrypt = require("bcrypt");
 const genrateToken = require("../utils/genrateToken");
-// login
+
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -27,8 +27,6 @@ const login = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
-
-// register
 const register = asyncHandler(async (req, res) => {
   const { email, password, phone, name } = req.body;
   // if user exists
@@ -51,8 +49,46 @@ const register = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+const logout = asyncHandler(async (req, res) => {
+  try {
+    res.clearCookie("token");
+    res.send({ message: "Logged Out" });
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
+
+const getAllUsers = asyncHandler(async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.send(users);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
+const getUser = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    res.send(user);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
+const deleteUser = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    await user.remove();
+    res.send({ message: "User removed" });
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
 
 module.exports = {
   login,
+  getAllUsers,
+  deleteUser,
+  getUser,
+  logout,
   register,
 };

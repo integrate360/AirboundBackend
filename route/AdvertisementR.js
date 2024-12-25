@@ -13,8 +13,8 @@ const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 // Routes
 router.post(
   "/ads",
-  authMiddleware,
-  isAdmin,
+  // authMiddleware,
+  // isAdmin,
   upload.single("image"),
   createAdvertisement
 );
