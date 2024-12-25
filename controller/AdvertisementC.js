@@ -3,13 +3,13 @@ const Advertisement = require("../model/AdvertisementM");
 
 // Create an advertisement
 const createAdvertisement = AsyncHandler(async (req, res) => {
-  const { link, name, description, image } = req.body;
+  const { link, name, description } = req.body;
   let imgPath = "";
   if (req.file) {
     imgPath = req.file.filename;
   }
   // Validate required fields
-  if (!link || !name || !description || !image) {
+  if (!link || !name || !description) {
     throw new Error("All fields are required");
   }
 
