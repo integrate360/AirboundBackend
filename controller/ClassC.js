@@ -67,8 +67,12 @@ const getClassById = AsyncHandler(async (req, res) => {
 const updateClass = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Please Provide the id");
   try {
-    if (req.file) {
-      req.body.image = req.file.filename;
+    let imgPath = [];
+    if (req.files) {
+      for (let i = 0; i < req.files.length; i++) {
+        imgPath.push(req.files[i].filename);
+      }
+      req.body.image = imgPath;
     }
 
     // get one class

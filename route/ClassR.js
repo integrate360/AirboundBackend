@@ -18,10 +18,10 @@ router.post(
 );
 
 router.put(
-  "/classes/:id",
-  authMiddleware,
-  isAdmin,
-  upload.single("image"),
+  "/class/:id",
+  // authMiddleware,
+  // isAdmin,
+  upload.array("images"),
   updateClass
 );
 
