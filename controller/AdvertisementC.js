@@ -9,7 +9,7 @@ const createAdvertisement = AsyncHandler(async (req, res) => {
     imgPath = req.file.filename;
   }
   // Validate required fields
-  if (!link || !name || !description ) {
+  if (!link || !name || !description) {
     throw new Error("All fields are required");
   }
 
