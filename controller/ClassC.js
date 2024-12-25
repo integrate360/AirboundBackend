@@ -66,6 +66,7 @@ const getClassById = AsyncHandler(async (req, res) => {
 
 const updateClass = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Please Provide the id");
+  const { packages, locations, trainers, availability } = req.body;
   try {
     let imgPath = [];
     if (req.files) {
@@ -76,9 +77,19 @@ const updateClass = AsyncHandler(async (req, res) => {
     }
 
     // get one class
-    const updateClass = await Class.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const updateClass = await Class.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...req.body,
+        packages: JSON.parse(packages),
+        locations: JSON.parse(locations),
+        trainers: JSON.parse(trainers),
+        availability: JSON.parse(availability),
+      },
+      {
+        new: true,
+      }
+    );
 
     // if class not found
     if (!updateClass) throw new Error("Class not found with this id");
