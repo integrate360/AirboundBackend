@@ -92,6 +92,10 @@ const deleteStaff = AsyncHandler(async (req, res) => {
     data: deletedStaff,
   });
 });
+const getTotalStaffs = AsyncHandler(async (req, res) => {
+  const staffs = await Staff.find({});
+  res.send({ totalStaffs: staffs.length });
+});
 
 module.exports = {
   createStaff,
@@ -99,4 +103,5 @@ module.exports = {
   getStaffById,
   updateStaff,
   deleteStaff,
+  getTotalStaffs,
 };

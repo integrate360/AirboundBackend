@@ -120,10 +120,19 @@ const deleteClass = AsyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+const getTotalClasses = AsyncHandler(async (req, res) => {
+  try {
+    const classes = await Class.find({});
+    res.send({ totalClasses: classes.length });
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
 module.exports = {
   createClass,
   getClasses,
   getClassById,
   deleteClass,
   updateClass,
+  getTotalClasses,
 };

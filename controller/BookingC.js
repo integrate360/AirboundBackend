@@ -53,6 +53,39 @@ const getAllBookings = AsyncHandler(async (req, res) => {
   });
 });
 
+const getTotalAmount = AsyncHandler(async (req, res) => {
+  try {
+    // Fetch all bookings
+    const bookings = await Booking.find();
+
+    // If bookings are empty
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No bookings found",
+        data: 0,
+      });
+    }
+
+    // Calculate total amount by summing up the 'amount' field
+    const totalAmount = bookings.reduce((sum, booking) => sum + (booking.amount || 0), 0);
+
+    // Respond with total amount
+    res.status(200).json({
+      success: true,
+      message: "Total amount fetched successfully",
+      data: totalAmount,
+    });
+  } catch (error) {
+    // Catch any errors and send the error message
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
 // Get a booking by ID
 const getBookingById = AsyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -129,6 +162,7 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
   }
 });
 module.exports = {
+  getTotalAmount,
   createBooking,
   getAllBookings,
   getBookingById,

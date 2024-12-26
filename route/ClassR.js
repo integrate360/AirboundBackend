@@ -4,6 +4,7 @@ const {
   getClassById,
   createClass,
   getClasses,
+  getTotalClasses
 } = require("../controller/ClassC.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();
@@ -28,5 +29,6 @@ router.put(
 router.get("/classes", getClasses);
 router.get("/class/:id", getClassById);
 router.delete("/class/:id", deleteClass);
+router.get("/totalClasses", getTotalClasses);
 
 module.exports = router;

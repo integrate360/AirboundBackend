@@ -6,6 +6,7 @@ const {
   getStaffById,
   updateStaff,
   deleteStaff,
+  getTotalStaffs,
 } = require("../controller/StaffC.js");
 const { upload } = require("../utils/uploadImg.js");
 
@@ -18,6 +19,7 @@ router.post(
   createStaff
 );
 router.get("/staff/", getAllStaffs);
+router.get("/getTotalStaffs", getTotalStaffs);
 router.get("/staff/:id", authMiddleware, isAdmin, getStaffById);
 router.put("/staff/:id", authMiddleware, isAdmin, updateStaff);
 router.delete("/staff/:id", deleteStaff);

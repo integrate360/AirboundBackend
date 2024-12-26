@@ -83,10 +83,18 @@ const deleteUser = asyncHandler(async (req, res) => {
     res.status(400).send({ error: error.message });
   }
 });
-
+const totalUsers = asyncHandler(async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.send({ totalUsers: users.length });
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
 module.exports = {
   login,
   getAllUsers,
+  totalUsers,
   deleteUser,
   getUser,
   logout,
