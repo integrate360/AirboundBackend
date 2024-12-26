@@ -13,6 +13,8 @@ var BookingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    time: { type: String },
+    duration: { type: Number },
     dates: [
       {
         type: Date,

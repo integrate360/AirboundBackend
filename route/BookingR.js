@@ -6,13 +6,17 @@ const {
   getBookingById,
   updateBooking,
   deleteBooking,
+  getBookingsByUser,
 } = require("../controller/BookingC");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
 // Routes
 router.post("/booking/", authMiddleware, createBooking);
-router.get("/booking/", authMiddleware, isAdmin, getAllBookings);
+
+router.get("/bookings/", authMiddleware, isAdmin, getAllBookings);
 router.get("/booking/:id", getBookingById);
+router.get("/booking/user/:id", getBookingsByUser);
+
 router.put("/booking/:id", authMiddleware, isAdmin, updateBooking);
 router.delete("/booking/:id", authMiddleware, isAdmin, deleteBooking);
 

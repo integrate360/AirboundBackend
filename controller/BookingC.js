@@ -36,7 +36,15 @@ const createBooking = AsyncHandler(async (req, res) => {
 
 // Get all bookings
 const getAllBookings = AsyncHandler(async (req, res) => {
-  const bookings = await Booking.find().populate("class user", "name title");
+  const bookings = await Booking.find()
+    .populate("user")
+    .populate("class")
+    .populate({
+      path: "class",
+      populate: {
+        path: "trainers",
+      },
+    });
 
   res.status(200).json({
     success: true,
@@ -102,10 +110,29 @@ const deleteBooking = AsyncHandler(async (req, res) => {
   });
 });
 
+const getBookingsByUser = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) throw new Error("Please provide an ID");
+
+  try {
+    const bookings = await Booking.find({ user: id })
+      .populate("class")
+      .populate("user");
+    res.status(200).json({
+      success: true,
+      message: "Bookings fetched successfully",
+      data: bookings,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
 module.exports = {
   createBooking,
   getAllBookings,
   getBookingById,
   updateBooking,
   deleteBooking,
+  getBookingsByUser,
 };
