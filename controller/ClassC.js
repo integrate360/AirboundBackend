@@ -33,7 +33,7 @@ const createClass = AsyncHandler(async (req, res) => {
 const getClasses = AsyncHandler(async (req, res) => {
   try {
     // get all classes
-    const classes = await Class.find({ active: true })
+    const classes = await Class.find()
       .populate("category")
       .populate("trainers");
 
