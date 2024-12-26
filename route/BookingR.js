@@ -7,6 +7,7 @@ const {
   updateBooking,
   deleteBooking,
   getBookingsByUser,
+  availableSlots,
 } = require("../controller/BookingC");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
@@ -16,8 +17,11 @@ router.post("/booking/", authMiddleware, createBooking);
 router.get("/bookings/", authMiddleware, isAdmin, getAllBookings);
 router.get("/booking/:id", getBookingById);
 router.get("/booking/user/:id", getBookingsByUser);
+router.get("/bookings/available-slots", availableSlots);
 
+router.put("/booking/reschedule", authMiddleware, availableSlots);
 router.put("/booking/:id", authMiddleware, isAdmin, updateBooking);
+
 router.delete("/booking/:id", authMiddleware, isAdmin, deleteBooking);
 
 module.exports = router;

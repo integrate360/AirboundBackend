@@ -128,6 +128,134 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
     console.log(error);
   }
 });
+
+const getDatesBetween = (startDate, endDate) => {
+  const dates = [];
+  let currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+};
+
+// GET /api/bookings/available-slots
+const availableSlots = AsyncHandler(async (req, res) => {
+  try {
+    const {
+      bookingId, // Current booking ID for rescheduling
+      startDate, // Starting date to check availability
+      endDate, // Ending date to check availability
+    } = req.query;
+
+    // Get current booking details
+    const booking = await Booking.findById(bookingId)
+      .populate("class")
+      .populate("user");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Get all dates between start and end
+    const datesToCheck = getDatesBetween(
+      new Date(startDate),
+      new Date(endDate)
+    );
+
+    // Get all bookings for this class in the date range
+    const existingBookings = await Booking.find({
+      class: booking.class._id,
+      dates: {
+        $elemMatch: {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
+        },
+      },
+      time: booking.time,
+    });
+
+    // Calculate available slots
+    const availableSlots = datesToCheck.map((date) => {
+      // Check if it's an available weekday
+      const isAvailableDay = booking.class.availability.includes(date.getDay());
+
+      // Count bookings for this date
+      const bookingsOnDate = existingBookings.filter(
+        (b) => b.dates[0].toDateString() === date.toDateString()
+      ).length;
+
+      // Check if slot is at least 3 hours away
+      const slotDateTime = new Date(date);
+      const [hours, minutes] = booking.time.split(":");
+      slotDateTime.setHours(parseInt(hours), parseInt(minutes), 0);
+
+      const threeHoursFromNow = new Date();
+      threeHoursFromNow.setHours(threeHoursFromNow.getHours() + 3);
+
+      // Calculate if slot is available
+      const isAvailable =
+        isAvailableDay &&
+        bookingsOnDate < booking.class.maxPeople &&
+        slotDateTime > threeHoursFromNow;
+
+      return {
+        date: date.toISOString(),
+        available: isAvailable,
+        remainingSlots: booking.class.maxPeople - bookingsOnDate,
+      };
+    });
+
+    res.json({
+      bookingDetails: {
+        packageDuration: booking.pacakge.duration,
+        time: booking.time,
+        originalDate: booking.dates[0],
+      },
+      availableSlots,
+    });
+  } catch (error) {
+    console.error("Error fetching available slots:", error);
+    res.status(500).json({ message: "Error fetching available slots" });
+  }
+});
+
+// PUT /api/bookings/reschedule
+const reschedule = AsyncHandler(async (req, res) => {
+  try {
+    const { bookingId, newDate } = req.body;
+
+    // Validate new date is available
+    const booking = await Booking.findById(bookingId).populate("class");
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Check if date is within package duration
+    const packageEndDate = new Date(booking.dates[0]);
+    packageEndDate.setDate(packageEndDate.getDate() + booking.pacakge.duration);
+
+    if (new Date(newDate) > packageEndDate) {
+      return res.status(400).json({
+        message: "Selected date is outside package duration",
+      });
+    }
+
+    // Update booking
+    booking.dates = [new Date(newDate)];
+    await booking.save();
+
+    res.json({
+      message: "Booking rescheduled successfully",
+      booking,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error rescheduling booking" });
+    throw new Error("Error rescheduling booking:");
+  }
+});
 module.exports = {
   createBooking,
   getAllBookings,
@@ -135,4 +263,6 @@ module.exports = {
   updateBooking,
   deleteBooking,
   getBookingsByUser,
+  reschedule,
+  availableSlots,
 };
