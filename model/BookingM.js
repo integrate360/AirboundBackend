@@ -18,6 +18,7 @@ var BookingSchema = new mongoose.Schema(
       duration: { type: Number },
       amount: { type: Number },
     },
+    trainer: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
     time: { type: String },
     duration: { type: Number },
     dates: [
