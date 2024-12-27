@@ -35,7 +35,8 @@ const getClasses = AsyncHandler(async (req, res) => {
     // get all classes
     const classes = await Class.find()
       .populate("category")
-      .populate("trainers");
+      .populate("trainers")
+      .populate("locations");
 
     // send the response
     res

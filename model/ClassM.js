@@ -6,6 +6,7 @@ var ClassSchema = new mongoose.Schema(
       require: true,
     },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+    locations: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
     description: {
       type: String,
       required: true,
@@ -21,7 +22,7 @@ var ClassSchema = new mongoose.Schema(
     trainers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Staff" }],
     image: [{ type: String }],
     maxPeople: { type: Number },
-    locations: { type: [String] },
+    // locations: { type: [String] },
     packages: [
       {
         days: { type: Number },
