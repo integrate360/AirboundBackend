@@ -3,7 +3,7 @@ const Package = require("../model/PackageM");
 
 // Create a new package
 const createPackage = AsyncHandler(async (req, res) => {
-  const { name, services, duration, price, days } = req.body;
+  const { name, services, duration, price, days, description } = req.body;
 
   if (!name) throw new Error("Package name is required");
 
@@ -11,6 +11,7 @@ const createPackage = AsyncHandler(async (req, res) => {
     name,
     services,
     duration,
+    description,
     price,
     days,
   });
