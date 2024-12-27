@@ -38,6 +38,7 @@ const createBooking = AsyncHandler(async (req, res) => {
 const getAllBookings = AsyncHandler(async (req, res) => {
   const bookings = await Booking.find()
     .populate("user")
+    .populate("trainer")
     .populate("class")
     .populate({
       path: "class",
@@ -68,7 +69,10 @@ const getTotalAmount = AsyncHandler(async (req, res) => {
     }
 
     // Calculate total amount by summing up the 'amount' field
-    const totalAmount = bookings.reduce((sum, booking) => sum + (booking.amount || 0), 0);
+    const totalAmount = bookings.reduce(
+      (sum, booking) => sum + (booking.amount || 0),
+      0
+    );
 
     // Respond with total amount
     res.status(200).json({
@@ -84,7 +88,6 @@ const getTotalAmount = AsyncHandler(async (req, res) => {
     });
   }
 });
-
 
 // Get a booking by ID
 const getBookingById = AsyncHandler(async (req, res) => {

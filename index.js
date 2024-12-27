@@ -32,6 +32,7 @@ app.use("/api", require("./route/UserR.js"));
 app.use("/api", require("./route/BookingR.js"));
 app.use("/api", require("./route/PaymentR.js"));
 app.use("/api", require("./route/StaffR.js"));
+app.use("/api", require("./route/PackageR.js"));
 
 // running on port
 app.listen(process.env.PORT, () => {
