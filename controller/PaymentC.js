@@ -44,8 +44,15 @@ const createPayment = AsyncHandler(async (req, res) => {
 // Get all payments
 const getAllPayments = AsyncHandler(async (req, res) => {
   const payments = await Payment.find()
-    .populate("class booking user", "title name amount")
-    .sort({ createdAt: -1 });
+    .populate("class")
+    .populate("package") // Corrected path
+    .populate({
+      path: 'package',
+      populate: {
+        path: 'services',
+      },
+    })    
+    .populate("user"); // Corrected path
 
   res.status(200).json({
     success: true,
@@ -53,6 +60,7 @@ const getAllPayments = AsyncHandler(async (req, res) => {
     data: payments,
   });
 });
+
 
 // Get a payment by ID
 const getPaymentById = AsyncHandler(async (req, res) => {
