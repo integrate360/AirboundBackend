@@ -6,6 +6,7 @@ var PackageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    description: { type: String, required: true },
     services: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     ],
