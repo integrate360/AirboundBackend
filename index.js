@@ -24,6 +24,7 @@ app.use(errorHandler);
 
 // custome routes
 app.use("/api", require("./route/AdminR.js"));
+app.use("/api", require("./route/LocationR.js"));
 app.use("/api", require("./route/ClassR.js"));
 app.use("/api", require("./route/AdvertisementR.js"));
 app.use("/api", require("./route/CategoryR.js"));

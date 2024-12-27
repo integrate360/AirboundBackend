@@ -20,10 +20,8 @@ router.get("/getTotalAmount", getTotalAmount);
 router.get("/booking/:id", getBookingById);
 router.get("/booking/user/:id", getBookingsByUser);
 router.get("/bookings/available-slots", availableSlots);
-
 router.put("/booking/reschedule", authMiddleware, reschedule);
 router.put("/booking/:id", authMiddleware, isAdmin, updateBooking);
-
 router.delete("/booking/:id", authMiddleware, isAdmin, deleteBooking);
 
 
