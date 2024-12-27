@@ -6,39 +6,33 @@ const User = require("../model/UserM");
 
 // Create a payment
 const createPayment = AsyncHandler(async (req, res) => {
-  const {
-    class: classId,
-    booking: bookingId,
-    user: userId,
-    dates,
-    amount,
-    location,
-  } = req.body;
+  const { package, user, class: classId, amount, bookings } = req.body;
 
   // Validate required fields
-  if (!classId || !bookingId || !userId || !amount) {
-    throw new Error("Class, booking, user, and amount are required");
+  if (!user || !amount || !bookings) {
+    throw new Error("booking, user, and amount are required");
   }
 
   // Validate references
   const classExists = await Class.findById(classId);
   if (!classExists) throw new Error("Class not found");
 
-  const bookingExists = await Booking.findById(bookingId);
-  if (!bookingExists) throw new Error("Booking not found");
-
-  const userExists = await User.findById(userId);
+  const userExists = await User.findById(user);
   if (!userExists) throw new Error("User not found");
 
   // Create a payment
   const newPayment = await Payment.create({
     class: classId,
-    booking: bookingId,
-    user: userId,
-    dates,
+    package,
+    user,
     amount,
-    location,
   });
+
+  // create bookings
+  for (let books of bookings) {
+    const booking = new Booking(books);
+    await booking.save();
+  }
 
   res.status(201).json({
     success: true,

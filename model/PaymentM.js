@@ -6,28 +6,18 @@ var PaymentSchema = new mongoose.Schema(
     class: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
-      required: true,
     },
-    amount: {
-      type: Number,
-    },
-    booking: {
+    package: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking",
-      required: true,
+      ref: "Package",
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    dates: [
-      {
-        type: Date,
-      },
-    ],
-    amount: { type: Number },
-    location: { type: String },
+    amount: { type: Number, required: true },
+    isPackage: { type: Boolean, required: true },
   },
   { timestamps: true }
 );
