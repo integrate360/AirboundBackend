@@ -6,7 +6,7 @@ var ClassSchema = new mongoose.Schema(
       require: true,
     },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-    locations: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
+    locations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Location" }],
     description: {
       type: String,
       required: true,
