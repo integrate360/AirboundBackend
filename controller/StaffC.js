@@ -4,18 +4,22 @@ const Staff = require("../model/StaffM");
 // Create a category
 const createStaff = AsyncHandler(async (req, res) => {
   const { name, description } = req.body;
-  console.log(req.body);
-  let imgPath = "";
-  if (req.file) {
-    imgPath = req.file.filename;
-  }
+
+ 
   // Validate required fields
   if (!name || !description) {
     throw new Error("name, image and description  are required");
   }
 
+
+  let imgUrl = "";
+  // Check if the image is uploaded and retrieve the Cloudinary URL
+  if (req.file) {
+    // Cloudinary provides the full URL in the 'path' property
+    imgUrl = req.file.path; // This contains the full Cloudinary URL
+  }
   // Create a new category
-  const newStaff = await Staff.create({ name, description, image: imgPath });
+  const newStaff = await Staff.create({ name, description, image: imgUrl });
 
   // Send the response
   res.status(200).json({

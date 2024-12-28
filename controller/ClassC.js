@@ -3,25 +3,31 @@ const Class = require("../model/ClassM");
 
 const createClass = AsyncHandler(async (req, res) => {
   const { availability } = req.body;
+
   try {
-    let imgPath = [];
+    let imgUrls = [];
     if (req.files) {
+      // Loop through the uploaded files and push the Cloudinary URL to imgUrls array
       for (let i = 0; i < req.files.length; i++) {
-        imgPath.push(req.files[i].filename);
+        imgUrls.push(req.files[i].path); // Assuming 'path' contains the full Cloudinary URL
       }
     }
-    // create new Class
+
+    // Create new Class instance
     const newClass = new Class({
       ...req.body,
-      availability: JSON.parse(availability),
-      image: imgPath,
+      availability: JSON.parse(availability), // Parsing the 'availability' field
+      image: imgUrls, // Store the Cloudinary URLs in the 'image' field
     });
-    await newClass.save(); // saving in DB
 
-    // send the response
-    res
-      .status(200)
-      .json({ message: "Class Created Successfully", data: newClass });
+    // Save to DB
+    await newClass.save();
+
+    // Send response
+    res.status(200).json({
+      message: "Class Created Successfully",
+      data: newClass,
+    });
   } catch (error) {
     throw new Error(error);
   }
