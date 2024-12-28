@@ -69,38 +69,41 @@ const getClassById = AsyncHandler(async (req, res) => {
 });
 
 const updateClass = AsyncHandler(async (req, res) => {
-  if (!req.params.id) throw new Error("Please Provide the id");
-  const { packages, locations, trainers, availability } = req.body;
-  try {
-    let imgPath = [];
-    if (req.files) {
-      for (let i = 0; i < req.files.length; i++) {
-        imgPath.push(req.files[i].filename);
-      }
-      req.body.image = imgPath;
-    }
+  const { id } = req.params;
+  if (!id) throw new Error("Please provide the id");
 
-    // get one class
-    const updateClass = await Class.findByIdAndUpdate(
-      req.params.id,
+  try {
+    const { packages, locations, trainers, availability, ...otherData } =
+      req.body;
+
+    // Handle image uploads
+    const imgPath = req.files?.map((file) => file.path) || [];
+    if (imgPath.length) otherData.image = imgPath;
+
+    console.log(imgPath);
+
+    // Update the class
+    const updatedClass = await Class.findByIdAndUpdate(
+      id,
       {
-        ...req.body,
-        availability: JSON.parse(availability),
+        ...otherData,
+        availability: availability ? JSON.parse(availability) : undefined,
       },
-      {
-        new: true,
-      }
+      { new: true }
     );
 
-    // if class not found
-    if (!updateClass) throw new Error("Class not found with this id");
+    // If class not found
+    if (!updatedClass) throw new Error("Class not found with this id");
 
-    // send the response
-    res
-      .status(200)
-      .json({ message: "class Updated successfully", data: updateClass });
+    // Send the response
+    res.status(200).json({
+      message: "Class updated successfully",
+      data: updatedClass,
+    });
   } catch (error) {
-    throw new Error(error);
+    throw new Error(
+      error.message || "An error occurred while updating the class"
+    );
   }
 });
 
