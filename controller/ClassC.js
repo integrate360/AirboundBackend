@@ -2,7 +2,7 @@ const AsyncHandler = require("express-async-handler");
 const Class = require("../model/ClassM");
 
 const createClass = AsyncHandler(async (req, res) => {
-  const { packages, locations, trainers, availability } = req.body;
+  const { availability } = req.body;
   try {
     let imgPath = [];
     if (req.files) {
@@ -13,9 +13,6 @@ const createClass = AsyncHandler(async (req, res) => {
     // create new Class
     const newClass = new Class({
       ...req.body,
-      packages: JSON.parse(packages),
-      locations: JSON.parse(locations),
-      trainers: JSON.parse(trainers),
       availability: JSON.parse(availability),
       image: imgPath,
     });
@@ -33,10 +30,7 @@ const createClass = AsyncHandler(async (req, res) => {
 const getClasses = AsyncHandler(async (req, res) => {
   try {
     // get all classes
-    const classes = await Class.find()
-      .populate("category")
-      .populate("trainers")
-      .populate("locations");
+    const classes = await Class.find().populate("category");
 
     // send the response
     res
@@ -82,9 +76,6 @@ const updateClass = AsyncHandler(async (req, res) => {
       req.params.id,
       {
         ...req.body,
-        packages: JSON.parse(packages),
-        locations: JSON.parse(locations),
-        trainers: JSON.parse(trainers),
         availability: JSON.parse(availability),
       },
       {
