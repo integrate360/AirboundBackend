@@ -39,13 +39,13 @@ const getAllBookings = AsyncHandler(async (req, res) => {
   const bookings = await Booking.find()
     .populate("user")
     .populate("trainer")
-    .populate("class")
-    .populate({
-      path: "class",
-      populate: {
-        path: "trainers",
-      },
-    });
+    .populate("class");
+  // .populate({
+  //   path: "class",
+  //   populate: {
+  //     path: "trainers",
+  //   },
+  // });
 
   res.status(200).json({
     success: true,
