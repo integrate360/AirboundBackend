@@ -4,21 +4,25 @@ const Advertisement = require("../model/AdvertisementM");
 // Create an advertisement
 const createAdvertisement = AsyncHandler(async (req, res) => {
   const { link, name, description } = req.body;
-  let imgPath = "";
-  if (req.file) {
-    imgPath = req.file.filename;
-  }
+
   // Validate required fields
   if (!link || !name || !description) {
     throw new Error("All fields are required");
   }
 
-  // Create a new advertisement
+  let imgUrl = "";
+  // Check if the image is uploaded and retrieve the Cloudinary URL
+  if (req.file) {
+    // Cloudinary provides the full URL in the 'path' property
+    imgUrl = req.file.path; // This contains the full Cloudinary URL
+  }
+
+  // Create a new advertisement with the Cloudinary URL for the image
   const newAd = await Advertisement.create({
     link,
     name,
     description,
-    image: imgPath,
+    image: imgUrl, // Store the full Cloudinary image URL
   });
 
   // Send the response

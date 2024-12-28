@@ -10,23 +10,40 @@ const {
 const { upload } = require("../utils/uploadImg.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 
-// Routes
+// Advertisement Routes
 router.post(
   "/ads",
-  // authMiddleware,
-  // isAdmin,
-  upload.single("image"),
-  createAdvertisement
+  authMiddleware, // Middleware to ensure user is authenticated
+  isAdmin, // Middleware to ensure user is an admin
+  upload.single("image"), // Middleware to handle image upload
+  createAdvertisement // Controller to handle advertisement creation
 );
-router.get("/ads", getAllAdvertisements);
-router.get("/ads/:id", authMiddleware, isAdmin, getAdvertisementById);
+
+router.get(
+  "/ads",// Optional: Require authentication for listing ads
+  getAllAdvertisements // Controller to fetch all advertisements
+);
+
+router.get(
+  "/ads/:id",
+  authMiddleware, // Ensure user is authenticated
+  isAdmin, // Ensure user is an admin
+  getAdvertisementById // Controller to fetch a single advertisement by ID
+);
+
 router.put(
   "/ads/:id",
-  authMiddleware,
-  isAdmin,
-  upload.single("image"),
-  updateAdvertisement
+  authMiddleware, // Middleware for authentication
+  isAdmin, // Middleware to ensure user is an admin
+  upload.single("image"), // Handle image upload if the advertisement image is updated
+  updateAdvertisement // Controller to handle advertisement updates
 );
-router.delete("/ads/:id", authMiddleware, isAdmin, deleteAdvertisement);
+
+router.delete(
+  "/ads/:id",
+  authMiddleware, // Ensure user is authenticated
+  isAdmin, // Ensure user is an admin
+  deleteAdvertisement // Controller to handle advertisement deletion
+);
 
 module.exports = router;
