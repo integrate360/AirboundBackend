@@ -2,6 +2,7 @@ const AsyncHandler = require("express-async-handler");
 const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
+const PaymentM = require("../model/PaymentM");
 
 // Create a booking
 const createBooking = AsyncHandler(async (req, res) => {
@@ -57,7 +58,7 @@ const getAllBookings = AsyncHandler(async (req, res) => {
 const getTotalAmount = AsyncHandler(async (req, res) => {
   try {
     // Fetch all bookings
-    const bookings = await Booking.find();
+    const bookings = await PaymentM.find();
 
     // If bookings are empty
     if (!bookings || bookings.length === 0) {
@@ -70,7 +71,7 @@ const getTotalAmount = AsyncHandler(async (req, res) => {
 
     // Calculate total amount by summing up the 'amount' field
     const totalAmount = bookings.reduce(
-      (sum, booking) => sum + (booking.amount || 0),
+      (sum, booking) => sum + (booking?.amount || 0),
       0
     );
 
