@@ -22,6 +22,7 @@ const createBooking = AsyncHandler(async (req, res) => {
 
   // Create a booking
   const newBooking = await Booking.create({
+    ...req.body,
     class: classId,
     user: userId,
     dates,

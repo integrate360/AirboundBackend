@@ -4,7 +4,7 @@ const {
   getClassById,
   createClass,
   getClasses,
-  getTotalClasses
+  getTotalClasses,
 } = require("../controller/ClassC.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();

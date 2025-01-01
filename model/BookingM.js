@@ -13,11 +13,6 @@ var BookingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    pacakge: {
-      days: { type: Number },
-      duration: { type: Number },
-      amount: { type: Number },
-    },
     trainer: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
     time: { type: String },
     duration: { type: Number },
