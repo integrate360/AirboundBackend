@@ -263,22 +263,16 @@ const availableSlots = AsyncHandler(async (req, res) => {
 // PUT /api/bookings/reschedule
 const reschedule = AsyncHandler(async (req, res) => {
   try {
-    const { bookingId, newDate } = req.body;
+    const { newDate, date } = req.body;
+    const { id } = req.params;
 
+    console.log(newDate, date, id);
     // Validate new date is available
-    const booking = await Booking.findById(bookingId).populate("class");
-    if (!booking) {
+    const booking = await Booking.findById(id).populate("class");
+    console.log(booking.dates.indexOf(date));
+    console.log(date, booking.dates);
+    if (booking) {
       return res.status(404).json({ message: "Booking not found" });
-    }
-
-    // Check if date is within package duration
-    const packageEndDate = new Date(booking.dates[0]);
-    packageEndDate.setDate(packageEndDate.getDate() + booking.pacakge.duration);
-
-    if (new Date(newDate) > packageEndDate) {
-      return res.status(400).json({
-        message: "Selected date is outside package duration",
-      });
     }
 
     // Update booking
@@ -290,8 +284,7 @@ const reschedule = AsyncHandler(async (req, res) => {
       booking,
     });
   } catch (error) {
-    res.status(500).json({ message: "Error rescheduling booking" });
-    throw new Error("Error rescheduling booking:");
+    res.status(201).json({ message: error.message });
   }
 });
 module.exports = {
