@@ -16,9 +16,9 @@ const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 // Routes
 router.post("/booking/", authMiddleware, createBooking);
 router.get("/bookings/", authMiddleware, isAdmin, getAllBookings);
-router.get("/getTotalAmount", getTotalAmount);
-router.get("/booking/:id", getBookingById);
-router.get("/booking/user/:id", getBookingsByUser);
+router.get("/getTotalAmount", authMiddleware, isAdmin, getTotalAmount);
+router.get("/booking/:id", authMiddleware, getBookingById);
+router.get("/booking/user/:id", authMiddleware, getBookingsByUser);
 router.get("/bookings/available-slots", availableSlots);
 router.put("/booking/reschedule/:id", authMiddleware, reschedule);
 router.put("/booking/:id", authMiddleware, isAdmin, updateBooking);

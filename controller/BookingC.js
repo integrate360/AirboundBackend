@@ -55,7 +55,6 @@ const getAllBookings = AsyncHandler(async (req, res) => {
     data: bookings,
   });
 });
-
 const getTotalAmount = AsyncHandler(async (req, res) => {
   try {
     // Fetch all bookings
@@ -155,6 +154,7 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
 
   try {
     const bookings = await Booking.find({ user: id })
+      .populate("trainer")
       .populate("class")
       .populate("user");
     res.status(200).json({
