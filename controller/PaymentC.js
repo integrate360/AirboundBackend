@@ -22,23 +22,38 @@ const createPayment = AsyncHandler(async (req, res) => {
 
   // Create a payment
   const newPayment = await Payment.create({
+    ...req.body,
     class: classId,
     package,
     user,
     amount,
   });
 
-  // create bookings
-  for (let books of bookings) {
-    const booking = new Booking(books);
-    await booking.save();
-  }
+  // Create bookings
+  try {
+    const bookingPromises = bookings.map(async (book) => {
+      // Validate booking object
+      if (!book.dates || !book.time || !book.class) {
+        throw new Error("Invalid booking data");
+      }
+      const newBooking = new Booking({ ...book });
+      await newBooking.save();
+      return newBooking;
+    });
 
-  res.status(201).json({
-    success: true,
-    message: "Payment created successfully",
-    data: newPayment,
-  });
+    const createdBookings = await Promise.all(bookingPromises);
+
+    res.status(201).json({
+      success: true,
+      message: "Payment and bookings created successfully",
+      data: {
+        payment: newPayment,
+        bookings: createdBookings,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Error creating bookings: ${error.message}`);
+  }
 });
 
 // Get all payments
@@ -47,11 +62,11 @@ const getAllPayments = AsyncHandler(async (req, res) => {
     .populate("class")
     .populate("package") // Corrected path
     .populate({
-      path: 'package',
+      path: "package",
       populate: {
-        path: 'services',
+        path: "services",
       },
-    })    
+    })
     .populate("user"); // Corrected path
 
   res.status(200).json({
@@ -60,7 +75,6 @@ const getAllPayments = AsyncHandler(async (req, res) => {
     data: payments,
   });
 });
-
 
 // Get a payment by ID
 const getPaymentById = AsyncHandler(async (req, res) => {
