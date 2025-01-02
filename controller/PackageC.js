@@ -30,15 +30,12 @@ const getPackages = AsyncHandler(async (req, res) => {
 });
 
 const getClassPackages = AsyncHandler(async (req, res) => {
-  const { id } = req.query; // Expecting a query parameter for the service ID
+  const { id } = req.params; // Expecting a query parameter for the service ID
 
   try {
-    let query = {};
-    if (id) {
-      query = { services: id }; // Find packages where the services array includes the id
-    }
-
-    const packages = await Package.find(query).populate("services");
+    const packages = await Package.find({ services: { $in: [id] } }).populate(
+      "services"
+    );
 
     res.status(200).json({
       message: "Packages retrieved successfully",
