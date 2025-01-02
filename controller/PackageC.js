@@ -29,6 +29,29 @@ const getPackages = AsyncHandler(async (req, res) => {
     .json({ message: "Packages retrieved successfully", data: packages });
 });
 
+const getClassPackages = AsyncHandler(async (req, res) => {
+  const { id } = req.query; // Expecting a query parameter for the service ID
+
+  try {
+    let query = {};
+    if (id) {
+      query = { services: id }; // Find packages where the services array includes the id
+    }
+
+    const packages = await Package.find(query).populate("services");
+
+    res.status(200).json({
+      message: "Packages retrieved successfully",
+      data: packages,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "An error occurred while retrieving packages",
+      error: error.message,
+    });
+  }
+});
+
 // Get a single package by ID
 const getPackageById = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Package ID is required");
@@ -81,4 +104,5 @@ module.exports = {
   getPackageById,
   updatePackage,
   deletePackage,
+  getClassPackages,
 };
