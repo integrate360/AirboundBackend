@@ -266,17 +266,18 @@ const reschedule = AsyncHandler(async (req, res) => {
     const { newDate, date } = req.body;
     const { id } = req.params;
 
-    console.log(newDate, date, id);
     // Validate new date is available
     const booking = await Booking.findById(id).populate("class");
-    console.log(booking.dates.indexOf(date));
-    console.log(date, booking.dates);
-    if (booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
 
-    // Update booking
-    booking.dates = [new Date(newDate)];
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Ensure the index is valid
+    const formattedDate = new Date(date).toISOString();
+    const index = booking.dates.findIndex(
+      (d) => new Date(d).toISOString() === formattedDate
+    );
+
+    booking.dates.splice(index, 1, new Date(newDate));
     await booking.save();
 
     res.json({
