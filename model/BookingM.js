@@ -23,6 +23,7 @@ var BookingSchema = new mongoose.Schema(
     ],
     location: { type: String },
     amount: { type: Number },
+    people: { type: Number, default: 1 },
   },
   { timestamps: true }
 );

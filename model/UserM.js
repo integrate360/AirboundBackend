@@ -1,4 +1,4 @@
-const mongoose = require("mongoose"); 
+const mongoose = require("mongoose");
 
 var UserSchema = new mongoose.Schema(
   {
@@ -22,7 +22,8 @@ var UserSchema = new mongoose.Schema(
       required: true,
     },
     token: { type: String },
-    emergencyPhone: { type: Number },
+    emergencyPhone: { type: String },
+    medicalCondition: { type: String },
   },
   { timestamps: true }
 );
