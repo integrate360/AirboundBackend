@@ -8,9 +8,11 @@ const login = asyncHandler(async (req, res) => {
   try {
     // verify email and passowrd
     const user = await User.findOne({ email });
-    if (!user) throw new Error("No user found with this Email");
+    if (!user)
+      return res.status(303).json({ message: "No user found with this Email" });
     const verifyPassword = await bcrypt.compare(password, user.password);
-    if (!verifyPassword) throw new Error("Wrong Credentials");
+    if (!verifyPassword)
+      return res.status(303).json({ message: "Wrong Credentials" });
 
     // save to cookie
     const token = genrateToken(user._id);
@@ -22,16 +24,19 @@ const login = asyncHandler(async (req, res) => {
     //update signin
     user.token = token;
     await user.save();
-    res.send(user);
+    res.status(200).json(user);
   } catch (error) {
-    throw new Error(error);
+    res.status(303).json(error);
   }
 });
 const register = asyncHandler(async (req, res) => {
   const { email, password, phone, name } = req.body;
   // if user exists
   const user = await User.findOne({ email });
-  if (user) throw new Error("user already exist with this email");
+  if (user)
+    return res
+      .status(303)
+      .json({ message: "user already exist with this email" });
   // hash password
   const salt = await bcrypt.genSaltSync(10);
   const hash = await bcrypt.hash(password, salt);
@@ -44,9 +49,9 @@ const register = asyncHandler(async (req, res) => {
       password: hash,
     });
     await newUser.save();
-    res.send({ msg: "Successfully Registered", newUser });
+    res.status(200).json(newUser);
   } catch (error) {
-    throw new Error(error);
+    res.status(303).json(error);
   }
 });
 const logout = asyncHandler(async (req, res) => {

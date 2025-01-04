@@ -25,6 +25,7 @@ const  BookingSchema = new mongoose.Schema(
           { type: mongoose.Schema.Types.ObjectId, ref: "Location", required: true },
         ],
     amount: { type: Number },
+    people: { type: Number, default: 1 },
   },
   { timestamps: true }
 );
