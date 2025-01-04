@@ -49,6 +49,9 @@ const register = asyncHandler(async (req, res) => {
       password: hash,
     });
     await newUser.save();
+    const token = genrateToken(newUser._id);
+    user.token = token;
+    await user.save();
     res.status(200).json(newUser);
   } catch (error) {
     res.status(303).json(error);
@@ -68,7 +71,6 @@ const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find({});
     res.send(users);
   } catch (error) {
-    console.log(error);
     res.status(400).send({ error: error.message });
   }
 });

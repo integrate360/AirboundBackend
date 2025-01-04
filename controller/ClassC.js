@@ -80,8 +80,6 @@ const updateClass = AsyncHandler(async (req, res) => {
     const imgPath = req.files?.map((file) => file.path) || [];
     if (imgPath.length) otherData.image = imgPath;
 
-    console.log(imgPath);
-
     // Update the class
     const updatedClass = await Class.findByIdAndUpdate(
       id,

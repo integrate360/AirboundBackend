@@ -9,7 +9,6 @@ const adminLogin = asyncHandler(async (req, res) => {
   try {
     // Verify if admin exists
     const admin = await Admin.findOne({ email });
-    console.log(email, password);
     if (!admin) throw new Error("No admin found with this Email");
 
     // Compare passwords
@@ -34,7 +33,6 @@ const registerAdmin = asyncHandler(async (req, res) => {
     const admin = await Admin.findOne({ email });
     if (admin) throw new Error("Admin already exists with this email");
 
-    console.log(password);
     // hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     // create new admin

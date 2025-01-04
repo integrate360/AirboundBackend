@@ -1,15 +1,19 @@
 const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const Admin = require("../model/AdminM.js");
+const UserM = require("../model/UserM.js");
 
 const authMiddleware = asyncHandler(async (req, res, next) => {
   let token;
   if (req?.headers?.authorization?.startsWith("Bearer")) {
     token = req?.headers?.authorization?.split(" ")[1];
     if (token) {
+      console.log(token);
       try {
         const decode = jwt.verify(token, process.env.JWT);
-        let user = await Admin.findById(decode.id);
+        let user;
+        user = await UserM.findById(decode.id);
+        if (!user) user = await Admin.findById(decode.id);
 
         if (!user) {
           throw new Error("User not found");

@@ -3,22 +3,26 @@ const Payment = require("../model/PaymentM");
 const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
-
+const Razorpay = require("razorpay");
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 // Create a payment
 const createPayment = AsyncHandler(async (req, res) => {
   const { package, user, class: classId, amount, bookings } = req.body;
-
+  console.log(req.body);
   // Validate required fields
   if (!user || !amount || !bookings) {
-    throw new Error("booking, user, and amount are required");
+    res.status(202).json("booking, user, and amount are required");
   }
 
   // Validate references
   const classExists = await Class.findById(classId);
-  if (!classExists) throw new Error("Class not found");
+  if (!classExists) res.status(202).json("Class not found");
 
   const userExists = await User.findById(user);
-  if (!userExists) throw new Error("User not found");
+  if (!userExists) res.status(202).json("User not found");
 
   // Create a payment
   const newPayment = await Payment.create({
@@ -34,7 +38,7 @@ const createPayment = AsyncHandler(async (req, res) => {
     const bookingPromises = bookings.map(async (book) => {
       // Validate booking object
       if (!book.dates || !book.time || !book.class) {
-        throw new Error("Invalid booking data");
+        res.status(202).json("Invalid booking data");
       }
       const newBooking = new Booking({ ...book });
       await newBooking.save();
@@ -52,7 +56,7 @@ const createPayment = AsyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    throw new Error(`Error creating bookings: ${error.message}`);
+    res.status(202).json(`Error creating bookings: ${error.message}`);
   }
 });
 
@@ -132,9 +136,24 @@ const deletePayment = AsyncHandler(async (req, res) => {
     data: deletedPayment,
   });
 });
+const createRazorpayPayment = AsyncHandler(async (req, res) => {
+  const { amount } = req.body;
 
+  try {
+    const order = await razorpay.orders.create({
+      amount, // Amount in smallest currency unit
+      currency: "INR",
+      receipt: `receipt_${Math.random() * 1000}`,
+    });
+
+    res.status(200).json({ orderId: order.id });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create Razorpay order" });
+  }
+});
 module.exports = {
   createPayment,
+  createRazorpayPayment,
   getAllPayments,
   getPaymentById,
   updatePayment,
