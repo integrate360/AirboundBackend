@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-// TODO add availability
 var StaffSchema = new mongoose.Schema(
   {
     name: { type: String },
