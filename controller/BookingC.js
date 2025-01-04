@@ -2,7 +2,111 @@ const AsyncHandler = require("express-async-handler");
 const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
+const moment = require("moment");
 const PaymentM = require("../model/PaymentM");
+const cron = require("node-cron");
+const Notification = require("../model/Notifications");
+
+// Utility: Send notification to users
+const sendNotification = async (user, message) => {
+  try {
+    const notification = new Notification({
+      userId: user._id,
+      message,
+      subject: "Class Start Reminder",
+    });
+
+    await notification.save();
+    console.log(`Notification sent to ${user.email}: ${message}`);
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+
+// Notify users of upcoming classes
+const notifyUpcomingClasses = AsyncHandler(async () => {
+  const currentDateTime = moment();
+  const currentTime = currentDateTime.add(1, "minutes").format("HH:mm"); // Format time as HH:mm
+  const currentDate = moment().format("YYYY-MM-DD") + "T00:00:00.000Z"; // Format date as YYYY-MM-DD
+
+  console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);
+
+  try {
+    // Aggregate to find bookings with classes starting within the next 2 minutes
+    const upcomingBookings = await Booking.aggregate([
+      {
+        $match: {
+          // Match bookings where any date in the 'dates' array is greater than or equal to the current date
+          dates: {
+            $elemMatch: {
+              $gte: currentDate, // Match dates greater than or equal to current date
+            },
+          },
+          time: currentTime, // Match the time exactly
+        },
+      },
+      {
+        $lookup: {
+          from: "users", // Assuming the user collection is named "users"
+          localField: "user", // "user" is the reference field in the Booking model
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: "$userDetails", // Unwind the userDetails array to get a single object
+      },
+      {
+        $lookup: {
+          from: "classes", // Assuming the class collection is named "classes"
+          localField: "class", // "class" is the reference field in the Booking model
+          foreignField: "_id",
+          as: "classDetails",
+        },
+      },
+      {
+        $unwind: "$classDetails", // Unwind the classDetails array to get a single object
+      },
+      {
+        $project: {
+          "userDetails.email": 1,
+          "userDetails._id": 1,
+          "classDetails.name": 1,
+        },
+      },
+    ]);
+
+    if (!upcomingBookings || upcomingBookings.length === 0) {
+      console.log("No upcoming classes in the next 2 minutes.");
+      return;
+    }
+
+    // Notify users
+    upcomingBookings.forEach((booking) => {
+      const message = `Your class "${booking.classDetails.name}" is starting in less than 2 minutes. Please be prepared.`;
+      console.log(
+        `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
+      );
+      sendNotification(booking.userDetails, message);
+    });
+
+    console.log(
+      `Notifications sent for ${upcomingBookings.length} upcoming classes.`
+    );
+  } catch (error) {
+    console.error(
+      "Error finding upcoming bookings or sending notifications:",
+      error
+    );
+  }
+});
+
+
+// Schedule the task to run every minute
+cron.schedule("* * * * *", () => {
+  console.log("Running a task every minute to check for upcoming classes...");
+  notifyUpcomingClasses();
+});
 
 // Create a booking
 const createBooking = AsyncHandler(async (req, res) => {
@@ -41,11 +145,12 @@ const getAllBookings = AsyncHandler(async (req, res) => {
   const bookings = await Booking.find()
     .populate("user")
     .populate("trainer")
-    .populate("class");
+    .populate("class")
+    .populate("location");
   // .populate({
   //   path: "class",
   //   populate: {
-  //     path: "trainers",
+  //     path: "locations",
   //   },
   // });
 

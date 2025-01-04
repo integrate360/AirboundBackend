@@ -1,7 +1,7 @@
 const mongoose = require("mongoose"); // Erase if already required
 
 // Declare the Schema of the Mongo model
-var BookingSchema = new mongoose.Schema(
+const  BookingSchema = new mongoose.Schema(
   {
     class: {
       type: mongoose.Schema.Types.ObjectId,
@@ -21,7 +21,9 @@ var BookingSchema = new mongoose.Schema(
         type: Date,
       },
     ],
-    location: { type: String },
+    location: [
+          { type: mongoose.Schema.Types.ObjectId, ref: "Location", required: true },
+        ],
     amount: { type: Number },
   },
   { timestamps: true }

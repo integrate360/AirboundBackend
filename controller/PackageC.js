@@ -1,5 +1,46 @@
 const AsyncHandler = require("express-async-handler");
+const moment = require("moment");
 const Package = require("../model/PackageM");
+const User = require("../model/UserM");
+const Notification = require("../model/Notifications");
+
+// Send notification for package expiry to users before 5 days
+const sendNotification = async (user, message) => {
+  try {
+    // Create a new notification in the database
+    const notification = new Notification({
+      userId: user._id,
+      message,
+      subject: "Package Expiry Reminder",
+    });
+
+    await notification.save(); // Save the notification to the database
+    console.log(`Notification sent to ${user.email}: ${message}`);
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+
+// Check for package expiry and notify users
+const notifyPackageExpiry = AsyncHandler(async (req, res) => {
+  const fiveDaysFromNow = moment().add(5, "days").toDate();
+
+  // Find packages expiring in the next 5 days
+  const expiringPackages = await Package.find({
+    expiryDate: { $lte: fiveDaysFromNow },
+  }).populate("user");
+
+  // Notify users
+  expiringPackages.forEach((pkg) => {
+    const message = `Your package "${pkg.name}" is expiring in less than 5 days. Please renew it soon.`;
+    sendNotification(pkg.user, message);
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Notifications sent for expiring packages",
+  });
+});
 
 // Create a new package
 const createPackage = AsyncHandler(async (req, res) => {
@@ -102,4 +143,5 @@ module.exports = {
   updatePackage,
   deletePackage,
   getClassPackages,
+  notifyPackageExpiry,
 };
