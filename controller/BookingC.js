@@ -101,7 +101,6 @@ const notifyUpcomingClasses = AsyncHandler(async () => {
   }
 });
 
-
 // Schedule the task to run every minute
 cron.schedule("* * * * *", () => {
   console.log("Running a task every minute to check for upcoming classes...");
@@ -419,7 +418,7 @@ const showAvailability = async (req, res) => {
     const bookings = await Booking.find({ class: classId, date });
 
     // Update the slots with the current number of people booked
-    const updatedSlots = daySlots.map((slot) => {
+    const updatedSlots = daySlots?.map((slot) => {
       const slotBookings = bookings.filter(
         (booking) => booking.time === slot.time
       );
