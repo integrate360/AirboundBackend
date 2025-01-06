@@ -397,6 +397,7 @@ const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
 
+    console.log(classId, date);
     // Validate input
     if (!classId || !date) {
       return res
@@ -412,7 +413,11 @@ const showAvailability = async (req, res) => {
 
     // Get availability slots for the given day
     const day = new Date(date).getDay();
-    const daySlots = classes.availability.filter((slot) => slot.day === day);
+    console.log({ day });
+    const daySlots = classes.availability.filter((slot) => {
+      console.log(slot.day, day);
+      return slot.day === day;
+    });
 
     // Fetch bookings for the class on the given date
     const bookings = await Booking.find({ class: classId, date });
