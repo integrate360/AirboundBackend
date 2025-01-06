@@ -74,9 +74,13 @@ const getClassPackages = AsyncHandler(async (req, res) => {
   const { id } = req.params; // Expecting a query parameter for the service ID
 
   try {
-    const packages = await Package.find({ services: { $in: [id] } }).populate(
-      "services"
-    );
+    const packages = await Package.find({ services: { $in: [id] } }).populate({
+      path: "services",
+      populate: [
+        { path: "availability.trainers", model: "Staff" },
+        { path: "availability.locations", model: "Location" },
+      ],
+    });
 
     res.status(200).json({
       message: "Packages retrieved successfully",

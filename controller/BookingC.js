@@ -405,7 +405,13 @@ const showAvailability = async (req, res) => {
     }
 
     // Fetch class details
-    const classes = await Class.findById(classId);
+    const classes = await Class.findById(classId).populate({
+      path: "availability",
+      populate: [
+        { path: "trainers", model: "Staff" },
+        { path: "locations", model: "Location" },
+      ],
+    });
     if (!classes) {
       return res.status(404).json({ message: "Class not found." });
     }
@@ -414,7 +420,7 @@ const showAvailability = async (req, res) => {
     const day = moment(date, "DD-MM-YYYY").day();
     const daySlots = classes.availability.filter((slot) => {
       console.log(slot.day, day);
-      return slot.day === day;
+      return slot?.day === day;
     });
 
     // Fetch bookings for the class on the given date
@@ -425,15 +431,16 @@ const showAvailability = async (req, res) => {
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
       const slotBookings = bookings.filter(
-        (booking) => booking.time === slot.time
+        (booking) => booking.time === slot?.time
       );
       return {
-        day: slot.day,
-        time: slot.time,
-        duration: slot.duration,
-        maxPeople: slot.maxPeople,
-        locations: slot.locations,
-        trainers: slot.trainers,
+        day: slot?.day,
+        time: slot?.time,
+        duration: slot?.duration,
+        maxPeople: slot?.maxPeople,
+        locations: slot?.locations,
+        trainers: slot?.trainers,
+        _id: slot?.trainers,
         people: slotBookings.length,
       };
     });
