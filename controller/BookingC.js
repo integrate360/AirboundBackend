@@ -411,7 +411,7 @@ const showAvailability = async (req, res) => {
     }
 
     // Get availability slots for the given day
-    const day = moment(date).day();
+    const day = moment(date, "DD-MM-YYYY").day();
     const daySlots = classes.availability.filter((slot) => {
       console.log(slot.day, day);
       return slot.day === day;
