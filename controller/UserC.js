@@ -31,32 +31,40 @@ const login = asyncHandler(async (req, res) => {
 });
 const register = asyncHandler(async (req, res) => {
   const { email, password, phone, name } = req.body;
-  // if user exists
-  const user = await User.findOne({ email });
-  if (user)
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
     return res
-      .status(303)
-      .json({ message: "user already exist with this email" });
-  // hash password
-  const salt = await bcrypt.genSaltSync(10);
-  const hash = await bcrypt.hash(password, salt);
+      .status(201)
+      .json({ message: "User already exists with this email" });
+  }
+
   try {
-    // create new User
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
     const newUser = new User({
       name,
       email,
       phone,
-      password: hash,
+      password: hashedPassword,
     });
     await newUser.save();
-    const token = genrateToken(newUser._id);
-    user.token = token;
-    await user.save();
-    res.status(200).json(newUser);
+
+    // Generate token
+    const token = genrateToken(newUser._id); // Ensure function name is correct
+    newUser.token = token; // Set token on newUser object
+    await newUser.save();
+
+    res.status(200).json(newUser); // Use 201 for successful resource creation
   } catch (error) {
-    res.status(303).json(error);
+    res.status(201).json({ message: error.message }); // 500 for server errors
   }
 });
+
 const logout = asyncHandler(async (req, res) => {
   try {
     res.clearCookie("token");
