@@ -92,7 +92,7 @@ const createPayment = AsyncHandler(async (req, res) => {
     amount,
   });
 
-  // Create bookings
+  // Create bookings and use aggregation to populate location
   try {
     const bookingPromises = bookings.map(async (book) => {
       if (!book.dates || !book.time || !book.class) {
@@ -105,13 +105,47 @@ const createPayment = AsyncHandler(async (req, res) => {
 
     const createdBookings = await Promise.all(bookingPromises);
 
+    // Aggregation to populate location and other details in one query
+    const populatedBookings = await Booking.aggregate([
+      {
+        $match: { _id: { $in: createdBookings.map(b => b._id) } }
+      },
+      {
+        $lookup: {
+          from: "locations",  // Lookup the locations collection
+          localField: "location", // Join with the location field
+          foreignField: "_id", // Match by _id in the Location collection
+          as: "locationDetails" // Store matched locations in locationDetails
+        }
+      },
+      {
+        $unwind: {
+          path: "$locationDetails",
+          preserveNullAndEmptyArrays: true // Allows empty location fields if not matched
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          className: 1,
+          locationName: { $ifNull: ["$locationDetails.name", "N/A"] }, // If location is not found, set to "N/A"
+          dates: 1,
+          totalAmount: amount,
+        }
+      }
+    ]);
+
     // Send invoice email to the user
     try {
+      const locationNames = populatedBookings
+        .map(booking => booking.locationName)
+        .join(", ") || "N/A"; // Join location names if multiple locations
+
       const bookingDetails = {
         _id: newPayment._id,
         className: classExists.name,
-        location: bookings[0]?.location || "N/A", // Assuming location is in bookings
-        dates: bookings[0]?.dates || [], // Assuming dates are in bookings
+        location: locationNames, // Locations are now correctly populated and joined
+        dates: populatedBookings[0]?.dates || [], // Assuming dates are in bookings
         totalAmount: amount,
       };
 
