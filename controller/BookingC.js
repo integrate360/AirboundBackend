@@ -416,7 +416,8 @@ const showAvailability = async (req, res) => {
 
     // Fetch bookings for the class on the given date
     const bookings = await Booking.find({ class: classId, date });
-    console.log(bookings.length);
+    console.log({ daySlots: daySlots?.length });
+    console.log({ daySlots });
 
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
