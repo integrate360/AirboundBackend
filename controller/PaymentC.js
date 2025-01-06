@@ -8,21 +8,80 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+
+const { sendInvoiceToUser } = require("../helper/Invoice");
+
 // Create a payment
+// const createPayment = AsyncHandler(async (req, res) => {
+//   const { package, user, class: classId, amount, bookings } = req.body;
+//   console.log(req.body);
+//   // Validate required fields
+//   if (!user || !amount || !bookings) {
+//     res.status(202).json("booking, user, and amount are required");
+//   }
+
+//   // Validate references
+//   const classExists = await Class.findById(classId);
+//   if (!classExists) res.status(202).json("Class not found");
+
+//   const userExists = await User.findById(user);
+//   if (!userExists) res.status(202).json("User not found");
+
+//   // Create a payment
+//   const newPayment = await Payment.create({
+//     ...req.body,
+//     class: classId,
+//     package,
+//     user,
+//     amount,
+//   });
+
+//   // Create bookings
+//   try {
+//     const bookingPromises = bookings.map(async (book) => {
+//       // Validate booking object
+//       if (!book.dates || !book.time || !book.class) {
+//         res.status(202).json("Invalid booking data");
+//       }
+//       const newBooking = new Booking({ ...book });
+//       await newBooking.save();
+//       return newBooking;
+//     });
+
+//     const createdBookings = await Promise.all(bookingPromises);
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Payment and bookings created successfully",
+//       data: {
+//         payment: newPayment,
+//         bookings: createdBookings,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(202).json(`Error creating bookings: ${error.message}`);
+//   }
+// });
+
 const createPayment = AsyncHandler(async (req, res) => {
   const { package, user, class: classId, amount, bookings } = req.body;
-  console.log(req.body);
+  console.log("Payment request body:", req.body); // Debug log
+
   // Validate required fields
   if (!user || !amount || !bookings) {
-    res.status(202).json("booking, user, and amount are required");
+    return res.status(400).json({ message: "Booking, user, and amount are required" });
   }
 
   // Validate references
   const classExists = await Class.findById(classId);
-  if (!classExists) res.status(202).json("Class not found");
+  if (!classExists) {
+    return res.status(404).json({ message: "Class not found" });
+  }
 
   const userExists = await User.findById(user);
-  if (!userExists) res.status(202).json("User not found");
+  if (!userExists) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
   // Create a payment
   const newPayment = await Payment.create({
@@ -33,12 +92,11 @@ const createPayment = AsyncHandler(async (req, res) => {
     amount,
   });
 
-  // Create bookings
+  // Create bookings and use aggregation to populate location
   try {
     const bookingPromises = bookings.map(async (book) => {
-      // Validate booking object
       if (!book.dates || !book.time || !book.class) {
-        res.status(202).json("Invalid booking data");
+        throw new Error("Invalid booking data");
       }
       const newBooking = new Booking({ ...book });
       await newBooking.save();
@@ -46,6 +104,62 @@ const createPayment = AsyncHandler(async (req, res) => {
     });
 
     const createdBookings = await Promise.all(bookingPromises);
+
+    // Aggregation to populate location and other details in one query
+    const populatedBookings = await Booking.aggregate([
+      {
+        $match: { _id: { $in: createdBookings.map(b => b._id) } }
+      },
+      {
+        $lookup: {
+          from: "locations",  // Lookup the locations collection
+          localField: "location", // Join with the location field
+          foreignField: "_id", // Match by _id in the Location collection
+          as: "locationDetails" // Store matched locations in locationDetails
+        }
+      },
+      {
+        $unwind: {
+          path: "$locationDetails",
+          preserveNullAndEmptyArrays: true // Allows empty location fields if not matched
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          className: 1,
+          locationName: { $ifNull: ["$locationDetails.name", "N/A"] }, // If location is not found, set to "N/A"
+          dates: 1,
+          totalAmount: amount,
+        }
+      }
+    ]);
+
+    // Send invoice email to the user
+    try {
+      const locationNames = populatedBookings
+        .map(booking => booking.locationName)
+        .join(", ") || "N/A"; // Join location names if multiple locations
+
+      const bookingDetails = {
+        _id: newPayment._id,
+        className: classExists.name,
+        location: locationNames, // Locations are now correctly populated and joined
+        dates: populatedBookings[0]?.dates || [], // Assuming dates are in bookings
+        totalAmount: amount,
+      };
+
+      const userDetails = {
+        name: userExists.name,
+        email: userExists.email,
+      };
+
+      console.log("Sending invoice email to user:", userDetails);
+      await sendInvoiceToUser(userDetails, bookingDetails);
+      console.log("Invoice email sent successfully");
+    } catch (emailError) {
+      console.error("Failed to send invoice email:", emailError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -56,7 +170,7 @@ const createPayment = AsyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(202).json(`Error creating bookings: ${error.message}`);
+    res.status(500).json({ message: `Error creating bookings: ${error.message}` });
   }
 });
 
