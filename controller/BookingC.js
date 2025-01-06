@@ -396,8 +396,6 @@ const reschedule = AsyncHandler(async (req, res) => {
 const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
-
-    console.log(classId, date);
     // Validate input
     if (!classId || !date) {
       return res
@@ -412,8 +410,7 @@ const showAvailability = async (req, res) => {
     }
 
     // Get availability slots for the given day
-    const day = new Date(date).getDay();
-    console.log({ day });
+    const day = moment(date).day();
     const daySlots = classes.availability.filter((slot) => {
       console.log(slot.day, day);
       return slot.day === day;
