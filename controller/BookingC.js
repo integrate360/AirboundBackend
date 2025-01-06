@@ -396,6 +396,7 @@ const reschedule = AsyncHandler(async (req, res) => {
 const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
+    console.log({ classId, date });
     // Validate input
     if (!classId || !date) {
       return res
