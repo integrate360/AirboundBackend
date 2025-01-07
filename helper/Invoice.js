@@ -95,8 +95,10 @@ const sendInvoiceToUser = async (user, booking) => {
   const outputPath = path.join(__dirname, "Invoice.pdf");
 
   try {
+    // Generate the PDF invoice
     await generatePDFInvoice(booking, outputPath);
 
+    // Send invoice to the user
     await sendEmailWithPDF({
       to: user.email,
       subject: `Invoice for Your Booking: ${booking._id}`,
@@ -114,6 +116,42 @@ const sendInvoiceToUser = async (user, booking) => {
     });
 
     console.log(`Invoice sent to ${user.email} for booking ID: ${booking._id}`);
+
+    // Send notification email to the admin
+    await sendEmailWithPDF({
+      to: "airboundfitness@gmail.com",
+      subject: "Airbound Fitness - You Have a New Booking",
+      body: `
+        <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
+          <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
+            <strong>You Have a New Booking</strong>
+          </div>
+          <p style="font-size: 16px; color: #555; margin-top: 20px;">
+            A new booking has been made by <strong>${user.name}</strong>.
+          </p>
+          <p style="font-size: 16px; color: #555;">
+            <strong>Booking Details:</strong>
+          </p>
+          <ul style="font-size: 14px; color: #555; margin-left: 20px;">
+            <li><strong>Booking ID:</strong> ${booking._id}</li>
+            <li><strong>Class Name:</strong> ${booking.className}</li>
+            <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
+            <li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>
+            <li><strong>Total Amount:</strong> ${
+              booking.totalAmount || "N/A"
+            }</li>
+          </ul>
+          <p style="font-size: 16px; color: #555; margin-top: 20px;">
+            Please find the invoice attached for your records.
+          </p>
+        </div>
+      `,
+      attachmentPath: outputPath,
+    });
+
+    console.log(
+      `Invoice and notification sent to admin for booking ID: ${booking._id}`
+    );
   } catch (error) {
     console.error("Failed to send invoice:", error.message);
     throw new Error("Error sending invoice");
