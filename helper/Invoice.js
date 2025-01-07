@@ -134,9 +134,13 @@ const sendInvoiceToUser = async (user, booking) => {
           </p>
           <ul style="font-size: 14px; color: #555; margin-left: 20px;">
             <li><strong>Booking ID:</strong> ${booking._id}</li>
-            <li><strong>Class Name:</strong> ${booking.className}</li>
+            <li><strong>Item Name:</strong> ${booking.className}</li>
             <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
-            <li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>
+${
+  booking.isPackage
+    ? `<li><strong>Dates:</strong> Multiple Dates</li>`
+    : `<li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>`
+}
             <li><strong>Total Amount:</strong> ${
               booking.totalAmount || "N/A"
             }</li>

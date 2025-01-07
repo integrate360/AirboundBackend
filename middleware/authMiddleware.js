@@ -8,7 +8,6 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   if (req?.headers?.authorization?.startsWith("Bearer")) {
     token = req?.headers?.authorization?.split(" ")[1];
     if (token) {
-      console.log(token);
       try {
         const decode = jwt.verify(token, process.env.JWT);
         let user;

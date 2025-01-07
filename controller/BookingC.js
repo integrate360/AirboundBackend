@@ -9,7 +9,7 @@ const Notification = require("../model/Notifications");
 const mongoose = require("mongoose");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
-
+console.log("SendGrid API Key length:", process.env.Sendgrid_Key?.length);
 
 // Utility: Send notification to users
 const sendNotification = async (user, message) => {
@@ -404,14 +404,20 @@ const reschedule = AsyncHandler(async (req, res) => {
     );
 
     if (index === -1) {
-      return res.status(400).json({ message: "Original date not found in booking" });
+      return res
+        .status(400)
+        .json({ message: "Original date not found in booking" });
     }
 
     // Update the date
     bookingData.dates.splice(index, 1, new Date(newDate));
-    await Booking.findByIdAndUpdate(id, { dates: bookingData.dates }, { new: true });
+    await Booking.findByIdAndUpdate(
+      id,
+      { dates: bookingData.dates },
+      { new: true }
+    );
 
-    const user = await User.findById(bookingData.user).select('name email');  
+    const user = await User.findById(bookingData.user).select("name email");
     if (user && user.email) {
       const emailContent = `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
@@ -422,7 +428,9 @@ const reschedule = AsyncHandler(async (req, res) => {
             Hello ${user.name},
           </p>
           <p style="font-size: 16px; color: #555; text-align: center;">
-            Your booking for the class <strong>${bookingData.classDetails.name}</strong> has been successfully rescheduled.
+            Your booking for the class <strong>${
+              bookingData.classDetails.name
+            }</strong> has been successfully rescheduled.
           </p>
           <p style="font-size: 16px; color: #555; text-align: center;">
             <strong>New Date:</strong> ${new Date(newDate).toDateString()}
@@ -437,14 +445,17 @@ const reschedule = AsyncHandler(async (req, res) => {
         // Send email using SendGrid
         const response = await sgMail.send({
           to: user.email,
-          from: "airboundfitness@gmail.com",  // Ensure this is verified in SendGrid
+          from: "airboundfitness@gmail.com", // Ensure this is verified in SendGrid
           subject: "Booking Rescheduled Successfully",
           html: emailContent,
         });
 
         console.log("Email sent successfully:", response);
       } catch (emailError) {
-        console.error("Failed to send email:", emailError.response?.body || emailError.message);
+        console.error(
+          "Failed to send email:",
+          emailError.response?.body || emailError.message
+        );
 
         if (emailError.response?.body?.errors) {
           emailError.response.body.errors.forEach((error) => {
@@ -464,11 +475,10 @@ const reschedule = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
-    console.log({ classId, date });
+    const localDate = moment(date, "DD-MM-YYYY").toISOString();
     // Validate input
     if (!classId || !date) {
       return res
@@ -491,18 +501,28 @@ const showAvailability = async (req, res) => {
     // Get availability slots for the given day
     const day = moment(date, "DD-MM-YYYY").day();
     const daySlots = classes.availability.filter((slot) => {
-      console.log(slot.day, day);
       return slot?.day === day;
     });
 
     // Fetch bookings for the class on the given date
-    const bookings = await Booking.find({ class: classId, date });
-    console.log({ daySlots: daySlots?.length });
-    console.log({ daySlots });
-
+    const bookings = await Booking.find({ class: classId });
+    const formattedBookings = bookings.filter((booking) =>
+      booking.dates.some((dbDate) => {
+        const adjustedDate = moment(dbDate).utcOffset(330).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:30)
+        console.log(adjustedDate, date);
+        return adjustedDate === date;
+      })
+    );
+    console.log(
+      bookings.length,
+      formattedBookings?.length,
+      formattedBookings[0]?.dates,
+      localDate,
+      date
+    );
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
-      const slotBookings = bookings.filter(
+      const slotBookings = formattedBookings.filter(
         (booking) => booking.time === slot?.time
       );
       return {

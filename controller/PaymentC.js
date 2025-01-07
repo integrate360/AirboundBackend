@@ -10,6 +10,7 @@ const razorpay = new Razorpay({
 });
 
 const { sendInvoiceToUser } = require("../helper/Invoice");
+const PackageM = require("../model/PackageM");
 
 // Create a payment
 // const createPayment = AsyncHandler(async (req, res) => {
@@ -65,11 +66,12 @@ const { sendInvoiceToUser } = require("../helper/Invoice");
 
 const createPayment = AsyncHandler(async (req, res) => {
   const { package, user, class: classId, amount, bookings } = req.body;
-  console.log("Payment request body:", req.body); // Debug log
 
   // Validate required fields
   if (!user || !amount || !bookings) {
-    return res.status(400).json({ message: "Booking, user, and amount are required" });
+    return res
+      .status(400)
+      .json({ message: "Booking, user, and amount are required" });
   }
 
   // Validate references
@@ -108,21 +110,21 @@ const createPayment = AsyncHandler(async (req, res) => {
     // Aggregation to populate location and other details in one query
     const populatedBookings = await Booking.aggregate([
       {
-        $match: { _id: { $in: createdBookings.map(b => b._id) } }
+        $match: { _id: { $in: createdBookings.map((b) => b._id) } },
       },
       {
         $lookup: {
-          from: "locations",  // Lookup the locations collection
+          from: "locations", // Lookup the locations collection
           localField: "location", // Join with the location field
           foreignField: "_id", // Match by _id in the Location collection
-          as: "locationDetails" // Store matched locations in locationDetails
-        }
+          as: "locationDetails", // Store matched locations in locationDetails
+        },
       },
       {
         $unwind: {
           path: "$locationDetails",
-          preserveNullAndEmptyArrays: true // Allows empty location fields if not matched
-        }
+          preserveNullAndEmptyArrays: true, // Allows empty location fields if not matched
+        },
       },
       {
         $project: {
@@ -131,21 +133,22 @@ const createPayment = AsyncHandler(async (req, res) => {
           locationName: { $ifNull: ["$locationDetails.name", "N/A"] }, // If location is not found, set to "N/A"
           dates: 1,
           totalAmount: amount,
-        }
-      }
+        },
+      },
     ]);
 
     // Send invoice email to the user
     try {
-      const locationNames = populatedBookings
-        .map(booking => booking.locationName)
-        .join(", ") || "N/A"; // Join location names if multiple locations
+      const locationNames =
+        populatedBookings.map((booking) => booking.locationName).join(", ") ||
+        "N/A"; // Join location names if multiple locations
 
       const bookingDetails = {
         _id: newPayment._id,
         className: classExists.name,
         location: locationNames, // Locations are now correctly populated and joined
         dates: populatedBookings[0]?.dates || [], // Assuming dates are in bookings
+        isPackge: true,
         totalAmount: amount,
       };
 
@@ -170,10 +173,95 @@ const createPayment = AsyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: `Error creating bookings: ${error.message}` });
+    res
+      .status(500)
+      .json({ message: `Error creating bookings: ${error.message}` });
   }
 });
+const createPackagePayment = AsyncHandler(async (req, res) => {
+  const { package, user, amount, bookings } = req.body;
+  console.log("Payment request body:", req.body); // Debug log
 
+  // Validate required fields
+  if (!user || !amount || !bookings) {
+    return res
+      .status(400)
+      .json({ message: "Booking, user, and amount are required" });
+  }
+
+  // Validate references
+  const classExists = await PackageM.findById(package);
+  if (!classExists) {
+    return res.status(404).json({ message: "Class not found" });
+  }
+
+  const userExists = await User.findById(user);
+  if (!userExists) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Create a payment
+  const newPayment = await Payment.create({
+    ...req.body,
+    package,
+    user,
+    amount,
+  });
+
+  // Create bookings and use aggregation to populate location
+  try {
+    const bookingPromises = bookings.map(async (book) => {
+      const newBooking = new Booking({
+        ...book,
+        user,
+        class: book?.classId,
+        dates: [book?.date],
+        location: book?.location?._id,
+        time: book?.time,
+        duration: book?.classDuration,
+      });
+      await newBooking.save();
+      return newBooking;
+    });
+
+    const createdBookings = await Promise.all(bookingPromises);
+    // Send invoice email to the user
+    try {
+      const bookingDetails = {
+        _id: newPayment._id,
+        className: classExists.name,
+        location: "Multiple Locations", // Locations are now correctly populated and joined
+        dates: [], // Assuming dates are in bookings
+        totalAmount: amount,
+        isPackge: true,
+      };
+
+      const userDetails = {
+        name: userExists.name,
+        email: userExists.email,
+      };
+
+      console.log("Sending invoice email to user:", userDetails);
+      await sendInvoiceToUser(userDetails, bookingDetails);
+      console.log("Invoice email sent successfully");
+    } catch (emailError) {
+      console.error("Failed to send invoice email:", emailError.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Payment and bookings created successfully",
+      data: {
+        payment: newPayment,
+        bookings: createdBookings,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: `Error creating bookings: ${error.message}` });
+  }
+});
 // Get all payments
 const getAllPayments = AsyncHandler(async (req, res) => {
   const payments = await Payment.find()
@@ -270,6 +358,7 @@ module.exports = {
   createRazorpayPayment,
   getAllPayments,
   getPaymentById,
+  createPackagePayment,
   updatePayment,
   deletePayment,
 };
