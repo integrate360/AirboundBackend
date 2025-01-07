@@ -504,14 +504,16 @@ const showAvailability = async (req, res) => {
     });
 
     // Fetch bookings for the class on the given date
-    const bookings = await Booking.find({
-      class: classId,
-      dates: { $in: [localDate] },
-    });
-    console.log(bookings[0]?.dates, localDate, date);
+    const bookings = await Booking.find({ class: classId });
+    const formattedBookings = bookings.filter((booking) =>
+      booking.dates.some(
+        (dbDate) => moment(dbDate).format("DD-MM-YYYY") === date
+      )
+    );
+    console.log(formattedBookings[0]?.dates, localDate, date);
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
-      const slotBookings = bookings.filter(
+      const slotBookings = formattedBookings.filter(
         (booking) => booking.time === slot?.time
       );
       return {
