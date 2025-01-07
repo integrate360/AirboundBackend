@@ -506,9 +506,10 @@ const showAvailability = async (req, res) => {
     // Fetch bookings for the class on the given date
     const bookings = await Booking.find({ class: classId });
     const formattedBookings = bookings.filter((booking) =>
-      booking.dates.some(
-        (dbDate) => moment(dbDate).format("DD-MM-YYYY") === date
-      )
+      booking.dates.some((dbDate) => {
+        console.log(moment(dbDate).format("DD-MM-YYYY"), date);
+        return moment(dbDate).format("DD-MM-YYYY") === date;
+      })
     );
     console.log(
       bookings.length,
