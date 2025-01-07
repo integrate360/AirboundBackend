@@ -510,7 +510,13 @@ const showAvailability = async (req, res) => {
         (dbDate) => moment(dbDate).format("DD-MM-YYYY") === date
       )
     );
-    console.log(formattedBookings[0]?.dates, localDate, date);
+    console.log(
+      bookings.length,
+      formattedBookings?.length,
+      formattedBookings[0]?.dates,
+      localDate,
+      date
+    );
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
       const slotBookings = formattedBookings.filter(
