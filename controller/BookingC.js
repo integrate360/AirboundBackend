@@ -508,6 +508,7 @@ const showAvailability = async (req, res) => {
       class: classId,
       dates: { $in: [localDate] },
     });
+    console.log(bookings[0]?.dates, localDate, date);
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
       const slotBookings = bookings.filter(
