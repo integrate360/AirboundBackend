@@ -507,8 +507,9 @@ const showAvailability = async (req, res) => {
     const bookings = await Booking.find({ class: classId });
     const formattedBookings = bookings.filter((booking) =>
       booking.dates.some((dbDate) => {
-        console.log(moment(dbDate).format("DD-MM-YYYY"), date);
-        return moment(dbDate).format("DD-MM-YYYY") === date;
+        const adjustedDate = moment(dbDate).utcOffset(330).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:30)
+        console.log(adjustedDate, date);
+        return adjustedDate === date;
       })
     );
     console.log(
