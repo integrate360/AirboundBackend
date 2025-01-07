@@ -9,7 +9,7 @@ const Notification = require("../model/Notifications");
 const mongoose = require("mongoose");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
-console.log("SendGrid API Key length:", process.env.Sendgrid_Key?.length);
+
 
 // Utility: Send notification to users
 const sendNotification = async (user, message) => {

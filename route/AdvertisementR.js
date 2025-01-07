@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const multer = require('multer');
 const {
   createAdvertisement,
   getAllAdvertisements,
@@ -7,7 +8,10 @@ const {
   updateAdvertisement,
   deleteAdvertisement,
 } = require("../controller/AdvertisementC.js");
-const { upload } = require("../utils/uploadImg.js");
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// const { upload } = require("../utils/uploadImg.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 
 // Advertisement Routes
