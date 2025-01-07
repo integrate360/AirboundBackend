@@ -6,6 +6,9 @@ const moment = require("moment");
 const PaymentM = require("../model/PaymentM");
 const cron = require("node-cron");
 const Notification = require("../model/Notifications");
+const mongoose = require("mongoose");
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.Sendgrid_Key);
 
 // Utility: Send notification to users
 const sendNotification = async (user, message) => {
@@ -364,39 +367,117 @@ const availableSlots = AsyncHandler(async (req, res) => {
   }
 });
 
-// PUT /api/bookings/reschedule
 const reschedule = AsyncHandler(async (req, res) => {
   try {
     const { newDate, date } = req.body;
     const { id } = req.params;
 
-    // Validate new date is available
-    const booking = await Booking.findById(id).populate("class");
+    // Validate booking with aggregation
+    const booking = await Booking.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(id) },
+      },
+      {
+        $lookup: {
+          from: "classes", // Replace "classes" with your actual collection name
+          localField: "class",
+          foreignField: "_id",
+          as: "classDetails",
+        },
+      },
+      {
+        $unwind: "$classDetails",
+      },
+    ]);
 
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking || booking.length === 0) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
-    // Ensure the index is valid
+    const bookingData = booking[0];
     const formattedDate = new Date(date).toISOString();
-    const index = booking.dates.findIndex(
+
+    // Ensure the date exists in the booking
+    const index = bookingData.dates.findIndex(
       (d) => new Date(d).toISOString() === formattedDate
     );
 
-    booking.dates.splice(index, 1, new Date(newDate));
-    await booking.save();
+    if (index === -1) {
+      return res
+        .status(400)
+        .json({ message: "Original date not found in booking" });
+    }
+
+    // Update the date
+    bookingData.dates.splice(index, 1, new Date(newDate));
+    await Booking.findByIdAndUpdate(
+      id,
+      { dates: bookingData.dates },
+      { new: true }
+    );
+
+    const user = await User.findById(bookingData.user).select("name email");
+    if (user && user.email) {
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
+          <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
+            <strong>Booking Rescheduled Successfully</strong>
+          </div>
+          <p style="font-size: 16px; color: #555; text-align: center; margin-top: 20px;">
+            Hello ${user.name},
+          </p>
+          <p style="font-size: 16px; color: #555; text-align: center;">
+            Your booking for the class <strong>${
+              bookingData.classDetails.name
+            }</strong> has been successfully rescheduled.
+          </p>
+          <p style="font-size: 16px; color: #555; text-align: center;">
+            <strong>New Date:</strong> ${new Date(newDate).toDateString()}
+          </p>
+          <p style="font-size: 16px; color: #555; text-align: center; margin-top: 20px;">
+            Thank you for choosing our services!
+          </p>
+        </div>
+      `;
+
+      try {
+        // Send email using SendGrid
+        const response = await sgMail.send({
+          to: user.email,
+          from: "airboundfitness@gmail.com", // Ensure this is verified in SendGrid
+          subject: "Booking Rescheduled Successfully",
+          html: emailContent,
+        });
+
+        console.log("Email sent successfully:", response);
+      } catch (emailError) {
+        console.error(
+          "Failed to send email:",
+          emailError.response?.body || emailError.message
+        );
+
+        if (emailError.response?.body?.errors) {
+          emailError.response.body.errors.forEach((error) => {
+            console.error("Email error detail:", error);
+          });
+        }
+      }
+    }
 
     res.json({
       message: "Booking rescheduled successfully",
-      booking,
+      booking: bookingData,
     });
   } catch (error) {
-    res.status(201).json({ message: error.message });
+    console.error("Error in reschedule function:", error.message);
+    res.status(500).json({ message: error.message });
   }
 });
 
 const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
-    console.log({ classId, date });
+    const localDate = moment(date, "DD-MM-YYYY").toISOString();
     // Validate input
     if (!classId || !date) {
       return res
@@ -419,15 +500,14 @@ const showAvailability = async (req, res) => {
     // Get availability slots for the given day
     const day = moment(date, "DD-MM-YYYY").day();
     const daySlots = classes.availability.filter((slot) => {
-      console.log(slot.day, day);
       return slot?.day === day;
     });
 
     // Fetch bookings for the class on the given date
-    const bookings = await Booking.find({ class: classId, date });
-    console.log({ daySlots: daySlots?.length });
-    console.log({ daySlots });
-
+    const bookings = await Booking.find({
+      class: classId,
+      dates: { $in: [localDate] },
+    });
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
       const slotBookings = bookings.filter(

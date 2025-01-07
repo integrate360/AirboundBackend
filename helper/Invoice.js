@@ -1,67 +1,75 @@
 const sgMail = require("@sendgrid/mail");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
 sgMail.setApiKey(process.env.Sendgrid_Key);
 
-const generateInvoice = (booking) => {
-  return `
-    <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; margin-bottom: 20px;">
-      <tr>
-        <td style="padding: 15px; background-color: #007bff; color: white; font-size: 20px; font-weight: bold; text-align: center;" colspan="2">Booking Invoice</td>
-      </tr>
-      <tr>
-        <td style="padding: 10px; font-size: 16px; font-weight: bold; background-color: #f9f9f9;">Booking ID:</td>
-        <td style="padding: 10px; font-size: 16px; background-color: #f9f9f9;">${
-          booking._id
-        }</td>
-      </tr>
-      <tr>
-        <td style="padding: 10px; font-size: 16px; font-weight: bold;">Class Name:</td>
-        <td style="padding: 10px; font-size: 16px;">${booking.className}</td>
-      </tr>
-      <tr>
-        <td style="padding: 10px; font-size: 16px; font-weight: bold;">Location:</td>
-        <td style="padding: 10px; font-size: 16px;">${
-          booking.location || "N/A"
-        }</td>
-      </tr>
-      <tr>
-        <td style="padding: 10px; font-size: 16px; font-weight: bold;">Dates:</td>
-        <td style="padding: 10px; font-size: 16px;">${booking.dates.join(
-          ", "
-        )}</td>
-      </tr>
-      
-      <tr>
-        <td style="padding: 10px; font-size: 16px; font-weight: bold;">Total Amount:</td>
-        <td style="padding: 10px; font-size: 16px;">${
-          booking.totalAmount ? `${booking.totalAmount} rupees` : "N/A"
-        }</td>
-      </tr>
-      <tr>
-        <td colspan="2" style="padding: 20px; font-size: 16px; background-color: #f9f9f9; text-align: center; color: #007bff;">
-          <strong>We look forward to seeing you!</strong>
-        </td>
-      </tr>
-    </table>
+const generatePDFInvoice = (booking, outputPath) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument();
+    const writeStream = fs.createWriteStream(outputPath);
 
-    <table style="width: 100%; font-family: Arial, sans-serif; border-top: 2px solid #007bff; margin-top: 20px;">
-      <tr>
-        <td style="padding: 10px; font-size: 14px; color: #555;">
-          <strong>Thank you for choosing our service!</strong><br>
-          For any questions, feel free to reach us at <a href="mailto:airboundfitness@gmail.com" style="color: #007bff;">airboundfitness@gmail.com</a> or call us at <a href="tel:+917506113884" style="color: #007bff;">+917506113884</a>.
-        </td>
-      </tr>
-    </table>
-  `;
+    doc.pipe(writeStream);
+
+    // Header
+    doc
+      .fontSize(20)
+      .fillColor("#007bff")
+      .text("Booking Invoice", { align: "center" })
+      .moveDown();
+
+    // Booking Details
+    doc
+      .fontSize(14)
+      .fillColor("black")
+      .text(`Booking ID: ${booking._id}`)
+      .text(`Class Name: ${booking.className}`)
+      .text(`Location: ${booking.location || "N/A"}`)
+      .text(`Dates: ${booking.dates.join(", ")}`)
+      .text(
+        `Total Amount: ${
+          booking.totalAmount ? `${booking.totalAmount}` : "N/A"
+        }`
+      )
+      .moveDown();
+
+    // Footer
+    doc
+      .fillColor("#007bff")
+      .fontSize(12)
+      .text("Thank you for choosing our service!", { align: "center" })
+      .moveDown()
+      .fillColor("black")
+      .text(
+        "For questions, reach us at airboundfitness@gmail.com or call +917506113884.",
+        { align: "center" }
+      );
+
+    doc.end();
+
+    writeStream.on("finish", () => resolve(outputPath));
+    writeStream.on("error", (err) => reject(err));
+  });
 };
 
-const sendEmail = async ({ to, subject, body }) => {
+const sendEmailWithPDF = async ({ to, subject, body, attachmentPath }) => {
+  const attachment = fs.readFileSync(attachmentPath).toString("base64");
+
   const msg = {
     to,
     from: "airboundfitness@gmail.com",
     subject,
     text: body,
-    html: body, // Using HTML body directly
+    html: body,
+    attachments: [
+      {
+        content: attachment,
+        filename: "Invoice.pdf",
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+    ],
   };
 
   try {
@@ -84,10 +92,14 @@ const sendInvoiceToUser = async (user, booking) => {
     throw new Error("Booking information is incomplete");
   }
 
-  const invoiceDetails = generateInvoice(booking);
+  const outputPath = path.join(__dirname, "Invoice.pdf");
 
   try {
-    await sendEmail({
+    // Generate the PDF invoice
+    await generatePDFInvoice(booking, outputPath);
+
+    // Send invoice to the user
+    await sendEmailWithPDF({
       to: user.email,
       subject: `Invoice for Your Booking: ${booking._id}`,
       body: `
@@ -96,17 +108,62 @@ const sendInvoiceToUser = async (user, booking) => {
             <strong>Thank You for Your Booking, ${user.name}!</strong>
           </div>
           <p style="font-size: 16px; color: #555; text-align: center; margin-top: 20px;">
-            We are excited to confirm your booking. Below are the details:
+            We are excited to confirm your booking. Please find your invoice attached.
           </p>
-          ${invoiceDetails}
         </div>
       `,
+      attachmentPath: outputPath,
     });
 
     console.log(`Invoice sent to ${user.email} for booking ID: ${booking._id}`);
+
+    // Send notification email to the admin
+    await sendEmailWithPDF({
+      to: "airboundfitness@gmail.com",
+      subject: "Airbound Fitness - You Have a New Booking",
+      body: `
+        <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
+          <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
+            <strong>You Have a New Booking</strong>
+          </div>
+          <p style="font-size: 16px; color: #555; margin-top: 20px;">
+            A new booking has been made by <strong>${user.name}</strong>.
+          </p>
+          <p style="font-size: 16px; color: #555;">
+            <strong>Booking Details:</strong>
+          </p>
+          <ul style="font-size: 14px; color: #555; margin-left: 20px;">
+            <li><strong>Booking ID:</strong> ${booking._id}</li>
+            <li><strong>Item Name:</strong> ${booking.className}</li>
+            <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
+${
+  booking.isPackage
+    ? `<li><strong>Dates:</strong> Multiple Dates</li>`
+    : `<li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>`
+}
+            <li><strong>Total Amount:</strong> ${
+              booking.totalAmount || "N/A"
+            }</li>
+          </ul>
+          <p style="font-size: 16px; color: #555; margin-top: 20px;">
+            Please find the invoice attached for your records.
+          </p>
+        </div>
+      `,
+      attachmentPath: outputPath,
+    });
+
+    console.log(
+      `Invoice and notification sent to admin for booking ID: ${booking._id}`
+    );
   } catch (error) {
     console.error("Failed to send invoice:", error.message);
     throw new Error("Error sending invoice");
+  } finally {
+    // Clean up the PDF file after sending
+    if (fs.existsSync(outputPath)) {
+      fs.unlinkSync(outputPath);
+    }
   }
 };
 
