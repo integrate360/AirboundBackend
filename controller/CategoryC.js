@@ -10,6 +10,7 @@ const createCategory = AsyncHandler(async (req, res) => {
   if (!title || !description) {
     throw new Error("Title and description are required");
   }
+  
   let imgUrl = "";
 
   // Check if the image is uploaded and use the uploadImage function

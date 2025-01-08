@@ -1,6 +1,6 @@
 const AsyncHandler = require("express-async-handler");
 const Staff = require("../model/StaffM");
-
+const  {uploadImage}  = require("../helper/fileUploadeService");
 // Create a category
 const createStaff = AsyncHandler(async (req, res) => {
   const { name, description } = req.body;
@@ -11,11 +11,18 @@ const createStaff = AsyncHandler(async (req, res) => {
   }
 
   let imgUrl = "";
-  // Check if the image is uploaded and retrieve the Cloudinary URL
+
+  // Check if the image is uploaded and use the uploadImage function
   if (req.file) {
-    // Cloudinary provides the full URL in the 'path' property
-    imgUrl = req.file.path; // This contains the full Cloudinary URL
+    try {
+      // Upload the image to AWS S3 using the uploadImage function
+      imgUrl = await uploadImage(req.file);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      throw new Error("Image upload failed");
+    }
   }
+
   // Create a new category
   const newStaff = await Staff.create({ name, description, image: imgUrl });
 
@@ -56,15 +63,35 @@ const getStaffById = AsyncHandler(async (req, res) => {
   });
 });
 
-// Update a category by ID
 const updateStaff = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  console.log(req.body);
   // Validate ID
   if (!id) throw new Error("Please provide an ID");
 
-  const updatedStaff = await Staff.findByIdAndUpdate(id, req.body, {
+  let imgUrl = "";
+
+  // Check if an image is uploaded and use the uploadImage function
+  if (req.file) {
+    try {
+      // Upload the image to AWS S3 using the uploadImage function
+      imgUrl = await uploadImage(req.file);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      throw new Error("Image upload failed");
+    }
+  }
+
+  // Prepare update object
+  const updateData = { ...req.body };
+  
+  // If an image was uploaded, include the image URL in the update
+  if (imgUrl) {
+    updateData.imageUrl = imgUrl;  // Assuming you have an `imageUrl` field in your Staff model
+  }
+
+  // Update the staff/category by ID
+  const updatedStaff = await Staff.findByIdAndUpdate(id, updateData, {
     new: true,
   });
 
@@ -76,6 +103,7 @@ const updateStaff = AsyncHandler(async (req, res) => {
     data: updatedStaff,
   });
 });
+
 
 // Delete a category by ID
 const deleteStaff = AsyncHandler(async (req, res) => {

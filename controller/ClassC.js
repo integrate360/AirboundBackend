@@ -1,5 +1,39 @@
 const AsyncHandler = require("express-async-handler");
 const Class = require("../model/ClassM");
+const  {uploadImage}  = require("../helper/fileUploadeService");
+
+// const createClass = AsyncHandler(async (req, res) => {
+//   const { availability } = req.body;
+
+//   try {
+//     let imgUrls = [];
+//     if (req.files) {
+//       // Loop through the uploaded files and push the Cloudinary URL to imgUrls array
+//       for (let i = 0; i < req.files.length; i++) {
+//         imgUrls.push(req.files[i].path); // Assuming 'path' contains the full Cloudinary URL
+//       }
+//     }
+
+//     // Create new Class instance
+//     const newClass = new Class({
+//       ...req.body,
+//       availability: JSON.parse(availability), // Parsing the 'availability' field
+//       image: imgUrls, // Store the Cloudinary URLs in the 'image' field
+//     });
+
+//     // Save to DB
+//     await newClass.save();
+
+//     // Send response
+//     res.status(200).json({
+//       message: "Class Created Successfully",
+//       data: newClass,
+//     });
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
+
 
 const createClass = AsyncHandler(async (req, res) => {
   const { availability } = req.body;
@@ -7,9 +41,16 @@ const createClass = AsyncHandler(async (req, res) => {
   try {
     let imgUrls = [];
     if (req.files) {
-      // Loop through the uploaded files and push the Cloudinary URL to imgUrls array
+      // Loop through the uploaded files and upload them to AWS S3
       for (let i = 0; i < req.files.length; i++) {
-        imgUrls.push(req.files[i].path); // Assuming 'path' contains the full Cloudinary URL
+        try {
+          // Upload each image using the uploadImage function
+          const imgUrl = await uploadImage(req.files[i]);
+          imgUrls.push(imgUrl);  // Store the returned S3 URL
+        } catch (err) {
+          console.error("Image upload failed:", err);
+          throw new Error("Image upload failed");
+        }
       }
     }
 
@@ -17,7 +58,7 @@ const createClass = AsyncHandler(async (req, res) => {
     const newClass = new Class({
       ...req.body,
       availability: JSON.parse(availability), // Parsing the 'availability' field
-      image: imgUrls, // Store the Cloudinary URLs in the 'image' field
+      image: imgUrls, // Store the uploaded image URLs in the 'image' field
     });
 
     // Save to DB
@@ -68,24 +109,76 @@ const getClassById = AsyncHandler(async (req, res) => {
   }
 });
 
+// const updateClass = AsyncHandler(async (req, res) => {
+//   const { id } = req.params;
+//   if (!id) throw new Error("Please provide the id");
+
+//   try {
+//     const { packages, locations, trainers, availability, ...otherData } =
+//       req.body;
+
+//     // Handle image uploads
+//     const imgPath = req.files?.map((file) => file.path) || [];
+//     if (imgPath.length) otherData.image = imgPath;
+
+//     // Update the class
+//     const updatedClass = await Class.findByIdAndUpdate(
+//       id,
+//       {
+//         ...otherData,
+//         availability: availability ? JSON.parse(availability) : undefined,
+//       },
+//       { new: true }
+//     );
+
+//     // If class not found
+//     if (!updatedClass) throw new Error("Class not found with this id");
+
+//     // Send the response
+//     res.status(200).json({
+//       message: "Class updated successfully",
+//       data: updatedClass,
+//     });
+//   } catch (error) {
+//     throw new Error(
+//       error.message || "An error occurred while updating the class"
+//     );
+//   }
+// });
 const updateClass = AsyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!id) throw new Error("Please provide the id");
 
   try {
-    const { packages, locations, trainers, availability, ...otherData } =
-      req.body;
+    const { packages, locations, trainers, availability, ...otherData } = req.body;
 
     // Handle image uploads
-    const imgPath = req.files?.map((file) => file.path) || [];
-    if (imgPath.length) otherData.image = imgPath;
+    let imgUrls = [];
+    if (req.files) {
+      // Loop through the uploaded files and upload them to AWS S3 (or any other service using uploadImage)
+      for (let i = 0; i < req.files.length; i++) {
+        try {
+          // Upload each image and get the URL from uploadImage
+          const imgUrl = await uploadImage(req.files[i]);
+          imgUrls.push(imgUrl); // Store the returned image URL
+        } catch (err) {
+          console.error("Image upload failed:", err);
+          throw new Error("Image upload failed");
+        }
+      }
+    }
 
-    // Update the class
+    // If images were uploaded, add them to otherData
+    if (imgUrls.length) {
+      otherData.image = imgUrls;
+    }
+
+    // Update the class with new data
     const updatedClass = await Class.findByIdAndUpdate(
       id,
       {
         ...otherData,
-        availability: availability ? JSON.parse(availability) : undefined,
+        availability: availability ? JSON.parse(availability) : undefined, // Parsing availability if provided
       },
       { new: true }
     );

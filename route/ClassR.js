@@ -8,20 +8,22 @@ const {
 } = require("../controller/ClassC.js");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 const router = require("express").Router();
-const { upload } = require("../utils/uploadImg.js");
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 router.post(
   "/class",
-  // authMiddleware,
-  // isAdmin,
+  authMiddleware,
+  isAdmin,
   upload.array("images"),
   createClass
 );
 
 router.put(
   "/class/:id",
-  // authMiddleware,
-  // isAdmin,
+  authMiddleware,
+  isAdmin,
   upload.array("images"),
   updateClass
 );
