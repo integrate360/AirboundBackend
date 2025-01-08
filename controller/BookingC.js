@@ -36,7 +36,7 @@ const notifyUpcomingClasses = AsyncHandler(async () => {
   console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);
 
   try {
-    // Aggregate to find bookings with classes starting within the next 2 minutes
+    // Aggregate to find bookings with classes starting within the next 30 minutes
     const upcomingBookings = await Booking.aggregate([
       {
         $match: {
@@ -81,13 +81,13 @@ const notifyUpcomingClasses = AsyncHandler(async () => {
     ]);
 
     if (!upcomingBookings || upcomingBookings.length === 0) {
-      console.log("No upcoming classes in the next 2 minutes.");
+      console.log("No upcoming classes in the next 30 minutes.");
       return;
     }
 
     // Notify users
     upcomingBookings.forEach((booking) => {
-      const message = `Your class "${booking.classDetails.name}" is starting in less than 2 minutes. Please be prepared.`;
+      const message = `Your class "${booking.classDetails.name}" is starting in less than 30 minutes. Please be prepared.`;
       console.log(
         `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
       );
