@@ -509,7 +509,6 @@ const showAvailability = async (req, res) => {
     const formattedBookings = bookings.filter((booking) =>
       booking.dates.some((dbDate) => {
         const adjustedDate = moment(dbDate).utcOffset(330).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:30)
-        console.log(adjustedDate, date);
         return adjustedDate === date;
       })
     );
@@ -522,9 +521,11 @@ const showAvailability = async (req, res) => {
     );
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
-      const slotBookings = formattedBookings.filter(
-        (booking) => booking.time === slot?.time
-      );
+      let count = 0;
+      const slotBookings = formattedBookings.filter((booking) => {
+        count += booking?.people;
+        return booking.time === slot?.time;
+      });
       return {
         day: slot?.day,
         time: slot?.time,
@@ -533,7 +534,7 @@ const showAvailability = async (req, res) => {
         locations: slot?.locations,
         trainers: slot?.trainers,
         _id: slot?.trainers,
-        people: slotBookings.length,
+        people: count,
       };
     });
 
