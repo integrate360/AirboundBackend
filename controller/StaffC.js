@@ -5,12 +5,10 @@ const Staff = require("../model/StaffM");
 const createStaff = AsyncHandler(async (req, res) => {
   const { name, description } = req.body;
 
- 
   // Validate required fields
   if (!name || !description) {
     throw new Error("name, image and description  are required");
   }
-
 
   let imgUrl = "";
   // Check if the image is uploaded and retrieve the Cloudinary URL
@@ -62,12 +60,12 @@ const getStaffById = AsyncHandler(async (req, res) => {
 const updateStaff = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  console.log(req.body);
   // Validate ID
   if (!id) throw new Error("Please provide an ID");
 
   const updatedStaff = await Staff.findByIdAndUpdate(id, req.body, {
     new: true,
-    runValidators: true,
   });
 
   if (!updatedStaff) throw new Error("Staff not found with this ID");

@@ -66,7 +66,7 @@ const PackageM = require("../model/PackageM");
 // });
 
 const createPayment = AsyncHandler(async (req, res) => {
-  const { package, user, class: classId, amount, bookings } = req.body;
+  const { user, class: classId, amount, bookings } = req.body;
 
   // Validate required fields
   if (!user || !amount || !bookings) {
@@ -90,14 +90,13 @@ const createPayment = AsyncHandler(async (req, res) => {
   const newPayment = await Payment.create({
     ...req.body,
     class: classId,
-    package,
     user,
     amount,
   });
 
   // Create bookings and use aggregation to populate location
   try {
-    const bookingPromises = bookings.map(async (book) => {
+    const bookingPromises = bookings?.map(async (book) => {
       if (!book.dates || !book.time || !book.class) {
         throw new Error("Invalid booking data");
       }
@@ -159,6 +158,7 @@ const createPayment = AsyncHandler(async (req, res) => {
       const userDetails = {
         name: userExists.name,
         email: userExists.email,
+        phone: userExists?.phone,
       };
 
       console.log("Sending invoice email to user:", userDetails);
@@ -214,7 +214,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
 
   // Create bookings and use aggregation to populate location
   try {
-    const bookingPromises = bookings.map(async (book) => {
+    const bookingPromises = bookings?.map(async (book) => {
       const newBooking = new Booking({
         ...book,
         user,
@@ -243,6 +243,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
       const userDetails = {
         name: userExists.name,
         email: userExists.email,
+        phone: userExists?.phone,
       };
 
       console.log("Sending invoice email to user:", userDetails);
