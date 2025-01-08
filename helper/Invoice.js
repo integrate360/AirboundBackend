@@ -6,10 +6,11 @@ sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const addContactInfo = (doc) => {
   const contactData = [
-    { label: "Phone", value: "+91 75061 13884" },
-    { label: "Email", value: "hello@airbound.in" },
+    {  value: "+917506113884" },
+    {  value: "Airbound" },
+    {  value: "hello@airbound.in" },
     {
-      label: "Address",
+ 
       value:
         "2nd floor Empressa,\nRam Krishna Nagar, 2nd Road,\nKhar West, Mumbai - 400052",
     },
@@ -26,23 +27,33 @@ const addContactInfo = (doc) => {
     doc
       .fontSize(12)
       .fillColor("black")
-      .text(label, 50, y)
       .text(value, 200, y, { align: "right" })
       .moveDown(1);
   });
 };
 
+const addBillToSection = (doc, user) => {
+  doc.fontSize(14).fillColor("black").text("Bill To").moveDown();
+  const userInfo = [
+    ["Name", user.name || "N/A"],
+    ["Email", user.email || "N/A"],
+    ["Phone", user.phone || "N/A"],
+  ];
+
+  userInfo.forEach(([label, value], index) => {
+    const y = doc.y;
+    doc.fontSize(12).text(label, 50, y).text(value, 200, y, { align: "right" });
+    if (index < userInfo.length - 1) doc.moveDown(1);
+  });
+};
+
 const addBookingDetails = (doc, booking) => {
-  doc
-    .fontSize(14)
-    .fillColor("black")
-    .text("Booking Details:", { underline: true })
-    .moveDown();
+  doc.fontSize(14).fillColor("black").text("Booking Details").moveDown();
 
   const details = [
     ["Item Name", booking.className],
     ["Location", booking.location || "N/A"],
-    ["Dates", booking?.isPackage ? "Multipul Dates" : booking.dates.join(", ")],
+    ["Dates", booking?.isPackage ? "Multiple Dates" : booking.dates.join(", ")],
     ["Total Amount", `₹${booking.totalAmount}` || "N/A"],
   ];
 
@@ -54,7 +65,7 @@ const addBookingDetails = (doc, booking) => {
   });
 };
 
-const generatePDFInvoice = (booking, outputPath) => {
+const generatePDFInvoice = (booking, user, outputPath) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
     const writeStream = fs.createWriteStream(outputPath);
@@ -85,12 +96,14 @@ const generatePDFInvoice = (booking, outputPath) => {
       .text("Booking Invoice", { align: "center" })
       .moveDown(2);
 
+    // Bill To Section
+    addBillToSection(doc, user);
+
     // Content Sections
     addBookingDetails(doc, booking);
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke("#cccccc").moveDown(2);
     addContactInfo(doc);
 
-    // Footer
     doc
       .moveDown(2)
       .moveDown(2)
@@ -99,10 +112,9 @@ const generatePDFInvoice = (booking, outputPath) => {
       .text("Thank you for choosing our service!", { align: "center" })
       .moveDown()
       .fillColor("black")
-      .text(
-        "For questions, reach us at hello@airbound.in or call +91 7506113884.",
-        { align: "center" }
-      );
+      .text("For questions, reach us at hello@airbound.in", { align: "center" })
+      .moveDown()
+      .text("Call us at +917506113884", { align: "center" });
 
     doc.end();
     writeStream.on("finish", () => resolve(outputPath));
@@ -147,12 +159,11 @@ const sendInvoiceToUser = async (user, booking) => {
   const outputPath = path.join(__dirname, "Invoice.pdf");
 
   try {
-    await generatePDFInvoice(booking, outputPath);
+    await generatePDFInvoice(booking, user, outputPath);
 
     const customerEmail = {
       to: user.email,
-      subject: `Invoice for Your Booking - ${booking.name}`,
-      subject: `Invoice for Your Booking - ${booking.name}`,
+      subject: `Invoice for Your Booking - ${booking.className}`,
       body: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
           <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
@@ -195,7 +206,7 @@ const sendInvoiceToUser = async (user, booking) => {
 
     await Promise.all([sendEmail(customerEmail), sendEmail(adminEmail)]);
 
-    console.log(`Invoices sent successfully for booking: ${booking.name}`);
+    console.log(`Invoices sent successfully for booking: ${booking.className}`);
   } catch (error) {
     console.error("Failed to send invoice:", error.message);
     throw new Error("Error sending invoice");

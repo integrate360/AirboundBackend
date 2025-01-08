@@ -66,7 +66,7 @@ const PackageM = require("../model/PackageM");
 // });
 
 const createPayment = AsyncHandler(async (req, res) => {
-  const { package, user, class: classId, amount, bookings } = req.body;
+  const { user, class: classId, amount, bookings } = req.body;
 
   // Validate required fields
   if (!user || !amount || !bookings) {
@@ -90,7 +90,6 @@ const createPayment = AsyncHandler(async (req, res) => {
   const newPayment = await Payment.create({
     ...req.body,
     class: classId,
-    package,
     user,
     amount,
   });
