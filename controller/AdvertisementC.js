@@ -1,6 +1,6 @@
 const AsyncHandler = require("express-async-handler");
 const Advertisement = require("../model/AdvertisementM");
-const  uploadImage  = require("../helper/fileUploadeService");
+const  {uploadImage}  = require("../helper/fileUploadeService");
 // Create an advertisement
 // const createAdvertisement = AsyncHandler(async (req, res) => {
 //   const { link, name, description } = req.body;
