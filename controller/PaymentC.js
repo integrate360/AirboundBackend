@@ -96,7 +96,7 @@ const createPayment = AsyncHandler(async (req, res) => {
 
   // Create bookings and use aggregation to populate location
   try {
-    const bookingPromises = bookings.map(async (book) => {
+    const bookingPromises = bookings?.map(async (book) => {
       if (!book.dates || !book.time || !book.class) {
         throw new Error("Invalid booking data");
       }
@@ -213,7 +213,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
 
   // Create bookings and use aggregation to populate location
   try {
-    const bookingPromises = bookings.map(async (book) => {
+    const bookingPromises = bookings?.map(async (book) => {
       const newBooking = new Booking({
         ...book,
         user,
