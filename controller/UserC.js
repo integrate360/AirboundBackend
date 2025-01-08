@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const User = require("../model/UserM");
 const bcrypt = require("bcrypt");
 const genrateToken = require("../utils/genrateToken");
+const { generatePassword } = require("../utils/Functions");
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -65,11 +66,11 @@ const register = asyncHandler(async (req, res) => {
   }
 });
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
-
+  const password = generatePassword();
   try {
     // Hash the password
     const salt = await bcrypt.genSalt(10);
