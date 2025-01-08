@@ -8,8 +8,8 @@ const {
 const router = express.Router();
 
 // Routes for enquiries
-router.post("/", createEnquiry); // Create an enquiry
-router.get("/", getEnquiries); // Get all enquiries
-router.delete("/:id", deleteEnquiry); // Delete an enquiry
+router.post("/enquiry", createEnquiry); // Create an enquiry
+router.get("/enquiry", getEnquiries); // Get all enquiries
+router.delete("/enquiry/:id", deleteEnquiry); // Delete an enquiry
 
 module.exports = router;
