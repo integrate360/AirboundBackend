@@ -30,7 +30,7 @@ const sendNotification = async (user, message) => {
 // Notify users of upcoming classes
 const notifyUpcomingClasses = AsyncHandler(async () => {
   const currentDateTime = moment();
-  const currentTime = currentDateTime.add(1, "minutes").format("HH:mm"); // Format time as HH:mm
+  const currentTime = currentDateTime.add(30, "minutes").format("HH:mm"); // Format time as HH:mm
   const currentDate = moment().format("YYYY-MM-DD") + "T00:00:00.000Z"; // Format date as YYYY-MM-DD
 
   console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);

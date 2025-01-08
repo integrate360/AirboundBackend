@@ -13,7 +13,7 @@ const BookingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    // trainer: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
+    trainer: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
     time: { type: String },
     duration: { type: Number },
     dates: [
