@@ -5,57 +5,112 @@ const path = require("path");
 
 sgMail.setApiKey(process.env.Sendgrid_Key);
 
+const addContactInfo = (doc) => {
+  const contactData = [
+    { label: "Phone", value: "+91 75061 13884" },
+    { label: "Email", value: "hello@airbound.in" },
+    {
+      label: "Address",
+      value:
+        "2nd floor Empressa,\nRam Krishna Nagar, 2nd Road,\nKhar West, Mumbai - 400052",
+    },
+  ];
+
+  doc
+    .fontSize(16)
+    .fillColor("#007bff")
+    .text("Get in Touch", { align: "center" })
+    .moveDown(0.5);
+
+  contactData.forEach(({ label, value }) => {
+    const y = doc.y;
+    doc
+      .fontSize(12)
+      .fillColor("black")
+      .text(label, 50, y)
+      .text(value, 200, y, { align: "right" })
+      .moveDown(1);
+  });
+};
+
+const addBookingDetails = (doc, booking) => {
+  doc
+    .fontSize(14)
+    .fillColor("black")
+    .text("Booking Details:", { underline: true })
+    .moveDown();
+
+  const details = [
+    ["Item Name", booking.className],
+    ["Location", booking.location || "N/A"],
+    ["Dates", booking?.isPackage ? "Multipul Dates" : booking.dates.join(", ")],
+    ["Total Amount", `₹${booking.totalAmount}` || "N/A"],
+  ];
+
+  details.forEach(([label, value], index) => {
+    if (label == "Dates" && booking?.isPackage) return;
+    const y = doc.y;
+    doc.fontSize(12).text(label, 50, y).text(value, 200, y, { align: "right" });
+    if (index < details.length - 1) doc.moveDown(1);
+  });
+};
+
 const generatePDFInvoice = (booking, outputPath) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ margin: 50 });
     const writeStream = fs.createWriteStream(outputPath);
 
     doc.pipe(writeStream);
 
-    // Header
+    // Logo
+    const logoPath = path.join(__dirname, "airbound.jpg");
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 50, 30, { width: 100 });
+    }
+
+    // Invoice Header
+    const invoiceDate = new Date().toLocaleDateString("en-GB");
+    const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    doc
+      .fontSize(12)
+      .fillColor("black")
+      .text(`Invoice Number: ${invoiceNumber}`, 400, 50, { align: "right" })
+      .text(`Invoice Date: ${invoiceDate}`, 400, 70, { align: "right" })
+      .moveDown(3);
+
+    // Title
     doc
       .fontSize(20)
       .fillColor("#007bff")
       .text("Booking Invoice", { align: "center" })
-      .moveDown();
+      .moveDown(2);
 
-    // Booking Details
-    doc
-      .fontSize(14)
-      .fillColor("black")
-      .text(`Booking ID: ${booking._id}`)
-      .text(`Class Name: ${booking.className}`)
-      .text(`Location: ${booking.location || "N/A"}`)
-      .text(`Dates: ${booking.dates.join(", ")}`)
-      .text(
-        `Total Amount: ${
-          booking.totalAmount ? `${booking.totalAmount}` : "N/A"
-        }`
-      )
-      .moveDown();
+    // Content Sections
+    addBookingDetails(doc, booking);
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke("#cccccc").moveDown(2);
+    addContactInfo(doc);
 
     // Footer
     doc
+      .moveDown(2)
       .fillColor("#007bff")
       .fontSize(12)
       .text("Thank you for choosing our service!", { align: "center" })
       .moveDown()
       .fillColor("black")
       .text(
-        "For questions, reach us at airboundfitness@gmail.com or call +917506113884.",
+        "For questions, reach us at hello@airbound.in or call +91 7506113884.",
         { align: "center" }
       );
 
     doc.end();
-
     writeStream.on("finish", () => resolve(outputPath));
-    writeStream.on("error", (err) => reject(err));
+    writeStream.on("error", reject);
   });
 };
 
-const sendEmailWithPDF = async ({ to, subject, body, attachmentPath }) => {
-  const attachment = fs.readFileSync(attachmentPath).toString("base64");
-
+const sendEmail = async ({ to, subject, body, attachmentPath }) => {
   const msg = {
     to,
     from: "airboundfitness@gmail.com",
@@ -64,7 +119,7 @@ const sendEmailWithPDF = async ({ to, subject, body, attachmentPath }) => {
     html: body,
     attachments: [
       {
-        content: attachment,
+        content: fs.readFileSync(attachmentPath).toString("base64"),
         filename: "Invoice.pdf",
         type: "application/pdf",
         disposition: "attachment",
@@ -84,24 +139,19 @@ const sendEmailWithPDF = async ({ to, subject, body, attachmentPath }) => {
 };
 
 const sendInvoiceToUser = async (user, booking) => {
-  if (!user?.email || !user?.name) {
+  if (!user?.email || !user?.name)
     throw new Error("User information is incomplete");
-  }
-
-  if (!booking || !booking._id) {
+  if (!booking?.className || !booking?.dates)
     throw new Error("Booking information is incomplete");
-  }
 
   const outputPath = path.join(__dirname, "Invoice.pdf");
 
   try {
-    // Generate the PDF invoice
     await generatePDFInvoice(booking, outputPath);
 
-    // Send invoice to the user
-    await sendEmailWithPDF({
+    const customerEmail = {
       to: user.email,
-      subject: `Invoice for Your Booking: ${booking._id}`,
+      subject: `Invoice for Your Booking - ${booking.name}`,
       body: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
           <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
@@ -113,13 +163,10 @@ const sendInvoiceToUser = async (user, booking) => {
         </div>
       `,
       attachmentPath: outputPath,
-    });
+    };
 
-    console.log(`Invoice sent to ${user.email} for booking ID: ${booking._id}`);
-
-    // Send notification email to the admin
-    await sendEmailWithPDF({
-      to: "airboundfitness@gmail.com",
+    const adminEmail = {
+      to: "vinodku4848@gmail.com",
       subject: "Airbound Fitness - You Have a New Booking",
       body: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
@@ -133,7 +180,6 @@ const sendInvoiceToUser = async (user, booking) => {
             <strong>Booking Details:</strong>
           </p>
           <ul style="font-size: 14px; color: #555; margin-left: 20px;">
-            <li><strong>Booking ID:</strong> ${booking._id}</li>
             <li><strong>Item Name:</strong> ${booking.className}</li>
             <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
 ${
@@ -145,22 +191,18 @@ ${
               booking.totalAmount || "N/A"
             }</li>
           </ul>
-          <p style="font-size: 16px; color: #555; margin-top: 20px;">
-            Please find the invoice attached for your records.
-          </p>
         </div>
       `,
       attachmentPath: outputPath,
-    });
+    };
 
-    console.log(
-      `Invoice and notification sent to admin for booking ID: ${booking._id}`
-    );
+    await Promise.all([sendEmail(customerEmail), sendEmail(adminEmail)]);
+
+    console.log(`Invoices sent successfully for booking: ${booking.name}`);
   } catch (error) {
     console.error("Failed to send invoice:", error.message);
     throw new Error("Error sending invoice");
   } finally {
-    // Clean up the PDF file after sending
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
     }

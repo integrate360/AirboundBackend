@@ -4,6 +4,7 @@ const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
 const Razorpay = require("razorpay");
+const moment = require("moment");
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -147,8 +148,11 @@ const createPayment = AsyncHandler(async (req, res) => {
         _id: newPayment._id,
         className: classExists.name,
         location: locationNames, // Locations are now correctly populated and joined
-        dates: populatedBookings[0]?.dates || [], // Assuming dates are in bookings
-        isPackge: true,
+        dates:
+          populatedBookings[0]?.dates?.map((e) =>
+            moment(e).format("MMM DD, YYYY")
+          ) || [], // Assuming dates are in bookings
+        isPackge: false,
         totalAmount: amount,
       };
 
@@ -231,7 +235,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
         _id: newPayment._id,
         className: classExists.name,
         location: "Multiple Locations", // Locations are now correctly populated and joined
-        dates: [], // Assuming dates are in bookings
+        dates: ["Multiple Dates"] || [], // Assuming dates are in bookings
         totalAmount: amount,
         isPackge: true,
       };

@@ -64,7 +64,58 @@ const register = asyncHandler(async (req, res) => {
     res.status(201).json({ message: error.message }); // 500 for server errors
   }
 });
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+
+  try {
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    existingUser.password = hashedPassword;
+    await existingUser.save();
+
+    // Generate token
+    const token = genrateToken(existingUser._id); // Ensure function name is correct
+    existingUser.token = token; // Set token on existingUser object
+    await existingUser.save();
+
+    res.status(200).json(existingUser); // Use 201 for successful resource creation
+  } catch (error) {
+    res.status(201).json({ message: error.message }); // 500 for server errors
+  }
+});
+const changePassword = asyncHandler(async (req, res) => {
+  const { password, newPassword, email } = req.body;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  const verifyPassword = await bcrypt.compare(password, existingUser.password);
+  if (!verifyPassword)
+    return res.status(303).json({ message: "Wrong Credentials" });
+  try {
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Create new user
+    existingUser.password = hashedPassword;
+    await existingUser.save();
+
+    // Generate token
+    const token = genrateToken(existingUser._id); // Ensure function name is correct
+    existingUser.token = token; // Set token on existingUser object
+    await existingUser.save();
+
+    res.status(200).json(existingUser); // Use 201 for successful resource creation
+  } catch (error) {
+    res.status(201).json({ message: error.message }); // 500 for server errors
+  }
+});
 const logout = asyncHandler(async (req, res) => {
   try {
     res.clearCookie("token");
@@ -114,4 +165,6 @@ module.exports = {
   getUser,
   logout,
   register,
+  forgotPassword,
+  changePassword,
 };
