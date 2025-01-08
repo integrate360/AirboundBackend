@@ -158,6 +158,7 @@ const createPayment = AsyncHandler(async (req, res) => {
       const userDetails = {
         name: userExists.name,
         email: userExists.email,
+        phone: userExists?.phone,
       };
 
       console.log("Sending invoice email to user:", userDetails);
@@ -242,6 +243,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
       const userDetails = {
         name: userExists.name,
         email: userExists.email,
+        phone: userExists?.phone,
       };
 
       console.log("Sending invoice email to user:", userDetails);

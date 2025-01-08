@@ -6,11 +6,10 @@ sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const addContactInfo = (doc) => {
   const contactData = [
-    {  value: "+917506113884" },
-    {  value: "Airbound" },
-    {  value: "hello@airbound.in" },
+    { value: "+917506113884" },
+    { value: "Airbound" },
+    { value: "hello@airbound.in" },
     {
- 
       value:
         "2nd floor Empressa,\nRam Krishna Nagar, 2nd Road,\nKhar West, Mumbai - 400052",
     },
@@ -54,7 +53,7 @@ const addBookingDetails = (doc, booking) => {
     ["Item Name", booking.className],
     ["Location", booking.location || "N/A"],
     ["Dates", booking?.isPackage ? "Multiple Dates" : booking.dates.join(", ")],
-    ["Total Amount", `₹${booking.totalAmount}` || "N/A"],
+    ["Total Amount", `INR ${booking.totalAmount}` || "N/A"],
   ];
 
   details.forEach(([label, value], index) => {
@@ -196,7 +195,7 @@ const sendInvoiceToUser = async (user, booking) => {
             <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
             <li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>
             <li><strong>Total Amount:</strong> ${
-              booking.totalAmount || "N/A"
+              `INR ${booking.totalAmount}` || "N/A"
             }</li>
           </ul>
         </div>
