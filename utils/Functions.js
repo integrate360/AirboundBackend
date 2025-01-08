@@ -1,4 +1,4 @@
-export function generatePassword() {
+function generatePassword() {
   const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lowercase = "abcdefghijklmnopqrstuvwxyz";
   const numbers = "0123456789";
@@ -32,3 +32,5 @@ export function generatePassword() {
     .sort(() => Math.random() - 0.5)
     .join("");
 }
+
+module.exports = { generatePassword };

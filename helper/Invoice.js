@@ -2,7 +2,6 @@ const sgMail = require("@sendgrid/mail");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
-
 sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const addContactInfo = (doc) => {
@@ -94,6 +93,7 @@ const generatePDFInvoice = (booking, outputPath) => {
     // Footer
     doc
       .moveDown(2)
+      .moveDown(2)
       .fillColor("#007bff")
       .fontSize(12)
       .text("Thank you for choosing our service!", { align: "center" })
@@ -152,6 +152,7 @@ const sendInvoiceToUser = async (user, booking) => {
     const customerEmail = {
       to: user.email,
       subject: `Invoice for Your Booking - ${booking.name}`,
+      subject: `Invoice for Your Booking - ${booking.name}`,
       body: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
           <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
@@ -182,11 +183,7 @@ const sendInvoiceToUser = async (user, booking) => {
           <ul style="font-size: 14px; color: #555; margin-left: 20px;">
             <li><strong>Item Name:</strong> ${booking.className}</li>
             <li><strong>Location:</strong> ${booking.location || "N/A"}</li>
-${
-  booking.isPackage
-    ? `<li><strong>Dates:</strong> Multiple Dates</li>`
-    : `<li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>`
-}
+            <li><strong>Dates:</strong> ${booking.dates.join(", ")}</li>
             <li><strong>Total Amount:</strong> ${
               booking.totalAmount || "N/A"
             }</li>

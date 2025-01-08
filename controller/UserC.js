@@ -2,6 +2,8 @@ const asyncHandler = require("express-async-handler");
 const User = require("../model/UserM");
 const bcrypt = require("bcrypt");
 const genrateToken = require("../utils/genrateToken");
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.Sendgrid_Key);
 const { generatePassword } = require("../utils/Functions");
 
 const login = asyncHandler(async (req, res) => {
@@ -81,10 +83,18 @@ const forgotPassword = asyncHandler(async (req, res) => {
     await existingUser.save();
 
     // Generate token
+    const msg = {
+      to: email,
+      from: "airboundfitness@gmail.com",
+      subject: "Password Genrated",
+      text: `Your Password is genrated, simply enter this ${password} to login to your existing account`,
+      html: `<p>Your Password is genrated, simply enter this <b>${password}</b> to login to your existing account</p>`,
+    };
+
+    await sgMail.send(msg);
     const token = genrateToken(existingUser._id); // Ensure function name is correct
     existingUser.token = token; // Set token on existingUser object
     await existingUser.save();
-
     res.status(200).json(existingUser); // Use 201 for successful resource creation
   } catch (error) {
     res.status(201).json({ message: error.message }); // 500 for server errors
@@ -126,6 +136,75 @@ const logout = asyncHandler(async (req, res) => {
   }
 });
 
+// // Forgot Password - send email with reset link
+// const forgotPassword = asyncHandler(async (req, res) => {
+//   const { email } = req.body;
+
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({ message: "User not found" });
+//     }
+
+//     // Generate reset token and set expiration date (1 hour)
+//     const resetToken = crypto.randomBytes(20).toString("hex");
+//     const resetTokenExpiry = Date.now() + 3600000; // 1 hour expiry
+
+//     // Save reset token and expiry time in user document
+//     user.resetToken = resetToken;
+//     user.resetTokenExpiry = resetTokenExpiry;
+//     await user.save();
+
+//     // Send reset password email
+//     const resetUrl = `http://yourfrontend.com/reset-password?token=${resetToken}`;
+//     const msg = {
+//       to: email,
+//       from: "no-reply@yourdomain.com",
+//       subject: "Password Reset Request",
+//       text: `To reset your password, please click on the following link: ${resetUrl}`,
+//       html: `<p>To reset your password, please click on the following link: <a href="${resetUrl}">Reset Password</a></p>`,
+//     };
+
+//     await sgMail.send(msg);
+//     res.status(200).json({ message: "Password reset email sent" });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// Reset Password - set new password
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    // Find the user by reset token and check if token is valid
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear reset token fields
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 const getAllUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find({});
@@ -161,6 +240,8 @@ const totalUsers = asyncHandler(async (req, res) => {
 module.exports = {
   login,
   getAllUsers,
+  resetPassword,
+  forgotPassword,
   totalUsers,
   deleteUser,
   getUser,
