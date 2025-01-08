@@ -1,5 +1,6 @@
 const AsyncHandler = require("express-async-handler");
 const Category = require("../model/CategoryM");
+const  {uploadImage}  = require("../helper/fileUploadeService");
 
 // Create a category
 const createCategory = AsyncHandler(async (req, res) => {
@@ -10,10 +11,16 @@ const createCategory = AsyncHandler(async (req, res) => {
     throw new Error("Title and description are required");
   }
   let imgUrl = "";
-  // Check if the image is uploaded and retrieve the Cloudinary URL
+
+  // Check if the image is uploaded and use the uploadImage function
   if (req.file) {
-    // Cloudinary provides the full URL in the 'path' property
-    imgUrl = req.file.path; // This contains the full Cloudinary URL
+    try {
+      // Upload the image to AWS S3 using the uploadImage function
+      imgUrl = await uploadImage(req.file);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      throw new Error("Image upload failed");
+    }
   }
 
   // Create a new category
