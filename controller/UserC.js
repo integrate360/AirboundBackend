@@ -45,7 +45,7 @@ const admin = require('../config/firebaseConfig');
 const sendPushNotification = async (req, res) => {
   try {
     // Get the user from the database based on user ID
-    const user = await User.findById(req.params.userId);  // Sending notification to a specific user by ID
+    const user = await User.findById(req.params.userId);  
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
