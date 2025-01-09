@@ -32,15 +32,14 @@ const login = asyncHandler(async (req, res) => {
     res.status(303).json(error);
   }
 });
+
 const register = asyncHandler(async (req, res) => {
-  const { email, password, phone, name } = req.body;
+  const { email, password, phone, name, fcmToken } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res
-      .status(201)
-      .json({ message: "User already exists with this email" });
+    return res.status(400).json({ message: "User already exists with this email" });
   }
 
   try {
@@ -53,20 +52,37 @@ const register = asyncHandler(async (req, res) => {
       name,
       email,
       phone,
+      fcmToken,
       password: hashedPassword,
     });
+
     await newUser.save();
 
     // Generate token
-    const token = genrateToken(newUser._id); // Ensure function name is correct
+    const token = genrateToken(newUser._id); // Ensure the function name is correct
     newUser.token = token; // Set token on newUser object
+
+    // Optionally, save the user again if the token is to be stored
     await newUser.save();
 
-    res.status(200).json(newUser); // Use 201 for successful resource creation
+    // Return successful response with user and token
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        fcmToken: newUser.fcmToken,
+      },
+      token,
+    });
   } catch (error) {
-    res.status(201).json({ message: error.message }); // 500 for server errors
+    console.error("Error during registration:", error);
+    res.status(500).json({ message: "Server error during registration" });
   }
 });
+
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
