@@ -6,24 +6,43 @@ const moment = require("moment");
 const PaymentM = require("../model/PaymentM");
 const cron = require("node-cron");
 const Notification = require("../model/Notifications");
+const serviceAccount = require("../helper/service-account-key.json");
 const mongoose = require("mongoose");
+const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
-console.log("SendGrid API Key length:", process.env.Sendgrid_Key?.length);
 
-// Utility: Send notification to users
-const sendNotification = async (user, message) => {
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+// Utility: Send push notification to users using Firebase
+const sendPushNotification = async (user, message) => {
   try {
-    const notification = new Notification({
-      userId: user._id,
-      message,
-      subject: "Class Start Reminder",
-    });
+    if (!user.fcmToken) {
+      console.log(`User ${user.email} does not have an FCM token.`);
+      return;
+    }
 
-    await notification.save();
-    console.log(`Notification sent to ${user.email}: ${message}`);
+    const payload = {
+      notification: {
+        title: "Class Start Reminder",
+        body: message,
+      },
+      data: {
+        userId: user._id.toString(),
+        type: "class_reminder",
+      },
+    };
+
+    const options = {
+      priority: "high",
+    };
+
+    await admin.messaging().sendToDevice(user.fcmToken, payload, options);
+    console.log(`Push notification sent to ${user.email}`);
   } catch (error) {
-    console.error("Error sending notification:", error);
+    console.error("Error sending push notification:", error);
   }
 };
 
@@ -75,6 +94,7 @@ const notifyUpcomingClasses = AsyncHandler(async () => {
         $project: {
           "userDetails.email": 1,
           "userDetails._id": 1,
+          "userDetails.fcmToken": 1,
           "classDetails.name": 1,
         },
       },
@@ -86,13 +106,23 @@ const notifyUpcomingClasses = AsyncHandler(async () => {
     }
 
     // Notify users
-    upcomingBookings.forEach((booking) => {
+    for (const booking of upcomingBookings) {
       const message = `Your class "${booking.classDetails.name}" is starting in less than 30 minutes. Please be prepared.`;
       console.log(
         `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
       );
-      sendNotification(booking.userDetails, message);
-    });
+
+      // Send push notification
+      await sendPushNotification(booking.userDetails, message);
+
+      // Optionally save the notification in the database
+      const notification = new Notification({
+        userId: booking.userDetails._id,
+        message,
+        subject: "Class Start Reminder",
+      });
+      await notification.save();
+    }
 
     console.log(
       `Notifications sent for ${upcomingBookings.length} upcoming classes.`
@@ -163,6 +193,7 @@ const getAllBookings = AsyncHandler(async (req, res) => {
     data: bookings,
   });
 });
+
 const getTotalAmount = AsyncHandler(async (req, res) => {
   try {
     // Fetch all bookings
