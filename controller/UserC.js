@@ -8,10 +8,44 @@ const { generatePassword } = require("../utils/Functions");
 const admin = require('../config/firebaseConfig');
 
 
+// const sendPushNotification = async (req, res) => {
+//   try {
+//     // Get the user from the database based on user ID (or you could use email, etc.)
+//     const user = await User.findById(req.params.userId);  // Assuming you're sending notification to a specific user by ID
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const { deviceToken } = user;  // Get deviceToken from the user
+
+//     // Check if the device token exists
+//     if (!deviceToken) {
+//       return res.status(400).json({ message: 'Device token is missing' });
+//     }
+
+//     // Create message payload
+//     const message = {
+//       notification: {
+//         title: 'New Notification',
+//         body: req.body.message,  // Message from the request body
+//       },
+//       token: deviceToken,  // Use user's stored device token
+//     };
+
+//     // Send notification
+//     const response = await admin.messaging().send(message);
+//     console.log('Successfully sent message:', response);
+
+//     res.status(200).json({ message: 'Notification sent successfully', response });
+//   } catch (error) {
+//     console.error('Error sending message:', error);
+//     res.status(500).json({ message: 'Error sending notification', error });
+//   }
+// };
 const sendPushNotification = async (req, res) => {
   try {
-    // Get the user from the database based on user ID (or you could use email, etc.)
-    const user = await User.findById(req.params.userId);  // Assuming you're sending notification to a specific user by ID
+    // Get the user from the database based on user ID
+    const user = await User.findById(req.params.userId);  // Sending notification to a specific user by ID
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -23,13 +57,17 @@ const sendPushNotification = async (req, res) => {
       return res.status(400).json({ message: 'Device token is missing' });
     }
 
+    // Define the logo URL (use the absolute URL of your logo image)
+    const logoUrl = 'https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png'; 
+
     // Create message payload
     const message = {
       notification: {
         title: 'New Notification',
         body: req.body.message,  // Message from the request body
+        imageUrl: logoUrl,  // Include logo image in the notification
       },
-      token: deviceToken,  // Use user's stored device token
+      token: deviceToken,  // Use the user's stored device token
     };
 
     // Send notification
