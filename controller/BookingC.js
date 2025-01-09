@@ -4,142 +4,142 @@ const Class = require("../model/ClassM");
 const User = require("../model/UserM");
 const moment = require("moment");
 const PaymentM = require("../model/PaymentM");
-const cron = require("node-cron");
-const Notification = require("../model/Notifications");
-const serviceAccount = require("../helper/service-account-key.json");
+// const cron = require("node-cron");
+// const Notification = require("../model/Notifications");
+// const serviceAccount = require("../helper/service-account-key.json");
 const mongoose = require("mongoose");
-const admin = require("firebase-admin");
+// const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.Sendgrid_Key);
+// sgMail.setApiKey(process.env.Sendgrid_Key);
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+// });
 
-// Utility: Send push notification to users using Firebase
-const sendPushNotification = async (user, message) => {
-  try {
-    if (!user.fcmToken) {
-      console.log(`User ${user.email} does not have an FCM token.`);
-      return;
-    }
+// // Utility: Send push notification to users using Firebase
+// const sendPushNotification = async (user, message) => {
+//   try {
+//     if (!user.fcmToken) {
+//       console.log(`User ${user.email} does not have an FCM token.`);
+//       return;
+//     }
 
-    const payload = {
-      notification: {
-        title: "Class Start Reminder",
-        body: message,
-      },
-      data: {
-        userId: user._id.toString(),
-        type: "class_reminder",
-      },
-    };
+//     const payload = {
+//       notification: {
+//         title: "Class Start Reminder",
+//         body: message,
+//       },
+//       data: {
+//         userId: user._id.toString(),
+//         type: "class_reminder",
+//       },
+//     };
 
-    const options = {
-      priority: "high",
-    };
+//     const options = {
+//       priority: "high",
+//     };
 
-    await admin.messaging().sendToDevice(user.fcmToken, payload, options);
-    console.log(`Push notification sent to ${user.email}`);
-  } catch (error) {
-    console.error("Error sending push notification:", error);
-  }
-};
+//     await admin.messaging().sendToDevice(user.fcmToken, payload, options);
+//     console.log(`Push notification sent to ${user.email}`);
+//   } catch (error) {
+//     console.error("Error sending push notification:", error);
+//   }
+// };
 
-// Notify users of upcoming classes
-const notifyUpcomingClasses = AsyncHandler(async () => {
-  const currentDateTime = moment();
-  const currentTime = currentDateTime.add(30, "minutes").format("HH:mm"); // Format time as HH:mm
-  const currentDate = moment().format("YYYY-MM-DD") + "T00:00:00.000Z"; // Format date as YYYY-MM-DD
+// // Notify users of upcoming classes
+// const notifyUpcomingClasses = AsyncHandler(async () => {
+//   const currentDateTime = moment();
+//   const currentTime = currentDateTime.add(30, "minutes").format("HH:mm"); // Format time as HH:mm
+//   const currentDate = moment().format("YYYY-MM-DD") + "T00:00:00.000Z"; // Format date as YYYY-MM-DD
 
-  console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);
+//   console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);
 
-  try {
-    // Aggregate to find bookings with classes starting within the next 30 minutes
-    const upcomingBookings = await Booking.aggregate([
-      {
-        $match: {
-          // Match bookings where any date in the 'dates' array is greater than or equal to the current date
-          dates: {
-            $elemMatch: {
-              $gte: currentDate, // Match dates greater than or equal to current date
-            },
-          },
-          time: currentTime, // Match the time exactly
-        },
-      },
-      {
-        $lookup: {
-          from: "users", // Assuming the user collection is named "users"
-          localField: "user", // "user" is the reference field in the Booking model
-          foreignField: "_id",
-          as: "userDetails",
-        },
-      },
-      {
-        $unwind: "$userDetails", // Unwind the userDetails array to get a single object
-      },
-      {
-        $lookup: {
-          from: "classes", // Assuming the class collection is named "classes"
-          localField: "class", // "class" is the reference field in the Booking model
-          foreignField: "_id",
-          as: "classDetails",
-        },
-      },
-      {
-        $unwind: "$classDetails", // Unwind the classDetails array to get a single object
-      },
-      {
-        $project: {
-          "userDetails.email": 1,
-          "userDetails._id": 1,
-          "userDetails.fcmToken": 1,
-          "classDetails.name": 1,
-        },
-      },
-    ]);
+//   try {
+//     // Aggregate to find bookings with classes starting within the next 30 minutes
+//     const upcomingBookings = await Booking.aggregate([
+//       {
+//         $match: {
+//           // Match bookings where any date in the 'dates' array is greater than or equal to the current date
+//           dates: {
+//             $elemMatch: {
+//               $gte: currentDate, // Match dates greater than or equal to current date
+//             },
+//           },
+//           time: currentTime, // Match the time exactly
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "users", // Assuming the user collection is named "users"
+//           localField: "user", // "user" is the reference field in the Booking model
+//           foreignField: "_id",
+//           as: "userDetails",
+//         },
+//       },
+//       {
+//         $unwind: "$userDetails", // Unwind the userDetails array to get a single object
+//       },
+//       {
+//         $lookup: {
+//           from: "classes", // Assuming the class collection is named "classes"
+//           localField: "class", // "class" is the reference field in the Booking model
+//           foreignField: "_id",
+//           as: "classDetails",
+//         },
+//       },
+//       {
+//         $unwind: "$classDetails", // Unwind the classDetails array to get a single object
+//       },
+//       {
+//         $project: {
+//           "userDetails.email": 1,
+//           "userDetails._id": 1,
+//           "userDetails.fcmToken": 1,
+//           "classDetails.name": 1,
+//         },
+//       },
+//     ]);
 
-    if (!upcomingBookings || upcomingBookings.length === 0) {
-      console.log("No upcoming classes in the next 30 minutes.");
-      return;
-    }
+//     if (!upcomingBookings || upcomingBookings.length === 0) {
+//       console.log("No upcoming classes in the next 30 minutes.");
+//       return;
+//     }
 
-    // Notify users
-    for (const booking of upcomingBookings) {
-      const message = `Your class "${booking.classDetails.name}" is starting in less than 30 minutes. Please be prepared.`;
-      console.log(
-        `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
-      );
+//     // Notify users
+//     for (const booking of upcomingBookings) {
+//       const message = `Your class "${booking.classDetails.name}" is starting in less than 30 minutes. Please be prepared.`;
+//       console.log(
+//         `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
+//       );
 
-      // Send push notification
-      await sendPushNotification(booking.userDetails, message);
+//       // Send push notification
+//       await sendPushNotification(booking.userDetails, message);
 
-      // Optionally save the notification in the database
-      const notification = new Notification({
-        userId: booking.userDetails._id,
-        message,
-        subject: "Class Start Reminder",
-      });
-      await notification.save();
-    }
+//       // Optionally save the notification in the database
+//       const notification = new Notification({
+//         userId: booking.userDetails._id,
+//         message,
+//         subject: "Class Start Reminder",
+//       });
+//       await notification.save();
+//     }
 
-    console.log(
-      `Notifications sent for ${upcomingBookings.length} upcoming classes.`
-    );
-  } catch (error) {
-    console.error(
-      "Error finding upcoming bookings or sending notifications:",
-      error
-    );
-  }
-});
+//     console.log(
+//       `Notifications sent for ${upcomingBookings.length} upcoming classes.`
+//     );
+//   } catch (error) {
+//     console.error(
+//       "Error finding upcoming bookings or sending notifications:",
+//       error
+//     );
+//   }
+// });
 
-// Schedule the task to run every minute
-cron.schedule("* * * * *", () => {
-  console.log("Running a task every minute to check for upcoming classes...");
-  notifyUpcomingClasses();
-});
+// // Schedule the task to run every minute
+// cron.schedule("* * * * *", () => {
+//   console.log("Running a task every minute to check for upcoming classes...");
+//   notifyUpcomingClasses();
+// });
 
 // Create a booking
 const createBooking = AsyncHandler(async (req, res) => {

@@ -5,6 +5,95 @@ const genrateToken = require("../utils/genrateToken");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
 const { generatePassword } = require("../utils/Functions");
+const admin = require('../config/firebaseConfig');
+
+
+const sendPushNotification = async (req, res) => {
+  try {
+    // Get the user from the database based on user ID (or you could use email, etc.)
+    const user = await User.findById(req.params.userId);  // Assuming you're sending notification to a specific user by ID
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { deviceToken } = user;  // Get deviceToken from the user
+
+    // Check if the device token exists
+    if (!deviceToken) {
+      return res.status(400).json({ message: 'Device token is missing' });
+    }
+
+    // Create message payload
+    const message = {
+      notification: {
+        title: 'New Notification',
+        body: req.body.message,  // Message from the request body
+      },
+      token: deviceToken,  // Use user's stored device token
+    };
+
+    // Send notification
+    const response = await admin.messaging().send(message);
+    console.log('Successfully sent message:', response);
+
+    res.status(200).json({ message: 'Notification sent successfully', response });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ message: 'Error sending notification', error });
+  }
+};
+
+
+const register = asyncHandler(async (req, res) => {
+  const { email, password, phone, name, deviceToken } = req.body;
+
+  // Check if user already exists with the provided email
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({ message: "User already exists with this email" });
+  }
+
+  try {
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create a new user with the provided data
+    const newUser = new User({
+      name,
+      email,
+      phone,
+      deviceToken,  // Save the device token received from the client
+      password: hashedPassword,
+    });
+
+    // Save the new user to the database
+    await newUser.save();
+
+    // Generate a token for the user (JWT or custom token)
+    const token = genrateToken(newUser._id); // Ensure the generateToken function is correct
+    newUser.token = token;  // Store the token (optional, depending on your needs)
+
+    // Optionally, save the token to the user document (if needed)
+    await newUser.save();
+
+    // Return the success response with user details and token
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        deviceToken: newUser.deviceToken,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error("Error during registration:", error);
+    res.status(500).json({ message: "Server error during registration" });
+  }
+});
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -33,55 +122,55 @@ const login = asyncHandler(async (req, res) => {
   }
 });
 
-const register = asyncHandler(async (req, res) => {
-  const { email, password, phone, name, fcmToken } = req.body;
+// const register = asyncHandler(async (req, res) => {
+//   const { email, password, phone, name, deviceToken } = req.body;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    return res.status(400).json({ message: "User already exists with this email" });
-  }
+//   // Check if user already exists
+//   const existingUser = await User.findOne({ email });
+//   if (existingUser) {
+//     return res.status(400).json({ message: "User already exists with this email" });
+//   }
 
-  try {
-    // Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+//   try {
+//     // Hash the password
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
-    const newUser = new User({
-      name,
-      email,
-      phone,
-      fcmToken,
-      password: hashedPassword,
-    });
+//     // Create new user
+//     const newUser = new User({
+//       name,
+//       email,
+//       phone,
+//       deviceToken,
+//       password: hashedPassword,
+//     });
 
-    await newUser.save();
+//     await newUser.save();
 
-    // Generate token
-    const token = genrateToken(newUser._id); // Ensure the function name is correct
-    newUser.token = token; // Set token on newUser object
+//     // Generate token
+//     const token = genrateToken(newUser._id); // Ensure the function name is correct
+//     newUser.token = token; // Set token on newUser object
 
-    // Optionally, save the user again if the token is to be stored
-    await newUser.save();
+//     // Optionally, save the user again if the token is to be stored
+//     await newUser.save();
 
-    // Return successful response with user and token
-    res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        fcmToken: newUser.fcmToken,
-      },
-      token,
-    });
-  } catch (error) {
-    console.error("Error during registration:", error);
-    res.status(500).json({ message: "Server error during registration" });
-  }
-});
+//     // Return successful response with user and token
+//     res.status(201).json({
+//       message: "User registered successfully",
+//       user: {
+//         id: newUser._id,
+//         name: newUser.name,
+//         email: newUser.email,
+//         phone: newUser.phone,
+//         deviceToken: newUser.deviceToken,
+//       },
+//       token,
+//     });
+//   } catch (error) {
+//     console.error("Error during registration:", error);
+//     res.status(500).json({ message: "Server error during registration" });
+//   }
+// });
 
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -254,6 +343,7 @@ const totalUsers = asyncHandler(async (req, res) => {
   }
 });
 module.exports = {
+  sendPushNotification,
   login,
   getAllUsers,
   resetPassword,
