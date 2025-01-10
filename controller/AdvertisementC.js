@@ -1,6 +1,6 @@
 const AsyncHandler = require("express-async-handler");
 const Advertisement = require("../model/AdvertisementM");
-const  {uploadImage}  = require("../helper/fileUploadeService");
+const { uploadImage } = require("../helper/fileUploadeService");
 // Create an advertisement
 // const createAdvertisement = AsyncHandler(async (req, res) => {
 //   const { link, name, description } = req.body;
@@ -33,10 +33,10 @@ const  {uploadImage}  = require("../helper/fileUploadeService");
 //   });
 // });
 const createAdvertisement = AsyncHandler(async (req, res) => {
-  const { link, name, description } = req.body;
+  const { class: classId, name, description } = req.body;
 
   // Validate required fields
-  if (!link || !name || !description) {
+  if (!name || !description || !classId) {
     throw new Error("All fields are required");
   }
 
@@ -55,7 +55,7 @@ const createAdvertisement = AsyncHandler(async (req, res) => {
 
   // Create a new advertisement with the AWS S3 URL for the image
   const newAd = await Advertisement.create({
-    link,
+    class: classId,
     name,
     description,
     image: imgUrl, // Store the AWS S3 image URL
@@ -70,7 +70,7 @@ const createAdvertisement = AsyncHandler(async (req, res) => {
 });
 // Get all advertisements
 const getAllAdvertisements = AsyncHandler(async (req, res) => {
-  const ads = await Advertisement.find();
+  const ads = await Advertisement.find().populate("class");
 
   res.status(200).json({
     success: true,
