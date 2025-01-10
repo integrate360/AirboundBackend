@@ -12,6 +12,7 @@ var PackageSchema = new mongoose.Schema(
     ],
     duration: { type: Number, required: true },
     price: { type: Number, required: true },
+    offerPrice: { type: Number },
     days: { type: Number, required: true },
   },
   { timestamps: true }
