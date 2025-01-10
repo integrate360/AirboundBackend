@@ -18,6 +18,7 @@ var UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    deviceToken: { type: String },
     token: { type: String },
     emergencyPhone: { type: String },
     medicalCondition: { type: String },
