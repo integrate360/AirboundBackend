@@ -26,7 +26,7 @@ var ClassSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     image: [{ type: String }],
     // locations: { type: [String] },
-
+    offerPrice: { type: String },
     active: { type: Boolean, default: true },
   },
   { timestamps: true }
