@@ -14,6 +14,24 @@ const admin = require("../config/firebaseConfig");
 // Define the logo URL (use the absolute URL of your logo image)
 const logoUrl =
   "https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png";
+  function convertTo12HourFormat(time) {
+    // Split the time into hours and minutes
+    let [hours, minutes] = time.split(':');
+
+    // Convert hours to an integer
+    hours = parseInt(hours);
+
+    // Determine AM or PM
+    const period = hours >= 12 ? 'PM' : 'AM';
+
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours === 0 ? 12 : hours; // Handle 12 AM/PM
+
+    // Format the time as "hh:mm AM/PM"
+    return `${hours}:${minutes} ${period}`;
+}
+
 
 // Schedule a task to run every minute to check for upcoming classes
 cron.schedule("* * * * *", async () => {
@@ -22,8 +40,8 @@ cron.schedule("* * * * *", async () => {
     const currentTime = moment(); // Use moment without formatting to keep it as a moment object
     console.log("Current time:", currentTime.format("YYYY-MM-DDTHH:mm"));
 
-    const fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes in milliseconds
-    console.log("Looking for classes within the next 5 minutes...");
+    const fiveMinutesInMs = 30 * 60 * 1000; // 5 minutes in milliseconds
+    console.log("Looking for classes within the next 30 minutes...");
 
     const bookings = await Booking.find();
 
@@ -40,7 +58,7 @@ cron.schedule("* * * * *", async () => {
         bookHoursNMinute.minutes() - currentTime.minutes();
       if (
         bookHoursNMinute.hours() >= currentTime.hours() &&
-        minuteDifference <= 5 &&
+        minuteDifference <= 30 &&
         minuteDifference >= 0
       ) {
         console.log("Processing booking:", booking._id);
@@ -55,18 +73,18 @@ cron.schedule("* * * * *", async () => {
           `User found: ${user._id}, Sending notification to device token: ${user.deviceToken}`
         );
 
-        console.log("Class is starting within the next 5 minutes.");
+        console.log("Class is starting within the next 30 minutes.");
         const message = {
           notification: {
             title: "Upcoming Class Reminder",
-            body: `Your class is starting in 5 minutes at .`,
+            body: `Your class is starting in 30 minutes at ${convertTo12HourFormat(booking?.time)}.`,
             imageUrl: logoUrl,
           },
           token: user.deviceToken,
         };
         const response = await admin.messaging().send(message);
         console.log("Successfully sent message:", response);
-      } else return console.log("No classes found within the next 5 minutes.");
+      } else return console.log("No classes found within the next 30 minutes.");
     }
   } catch (error) {
     console.error("Error sending push notifications:", error);
@@ -75,7 +93,17 @@ cron.schedule("* * * * *", async () => {
 
 // Get all bookings
 const getAllBookings = AsyncHandler(async (req, res) => {
-  const bookings = await Booking.find();
+  const bookings = await Booking.find()
+    .populate("user")
+    .populate("trainer")
+    .populate("class")
+    .populate("location");
+  // .populate({
+  //   path: "class",
+  //   populate: {
+  //     path: "locations",
+  //   },
+  // });
 
   res.status(200).json({
     success: true,
