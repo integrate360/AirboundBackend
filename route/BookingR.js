@@ -16,7 +16,7 @@ const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
 // Routes
 router.post("/booking/", authMiddleware, createBooking);
-router.get("/bookings/", authMiddleware, isAdmin, getAllBookings);
+router.get("/bookings/", getAllBookings);
 router.get("/getTotalAmount", authMiddleware, isAdmin, getTotalAmount);
 router.get("/booking/:id", authMiddleware, getBookingById);
 router.post("/booking/availability", showAvailability);

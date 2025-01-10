@@ -1,147 +1,89 @@
 const AsyncHandler = require("express-async-handler");
+const cron = require("node-cron");
 const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
 const moment = require("moment");
 const PaymentM = require("../model/PaymentM");
-// const cron = require("node-cron");
-// const Notification = require("../model/Notifications");
-// const serviceAccount = require("../helper/service-account-key.json");
 const mongoose = require("mongoose");
-// const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
-// sgMail.setApiKey(process.env.Sendgrid_Key);
+sgMail.setApiKey(process.env.Sendgrid_Key);
 
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-// });
+const admin = require("../config/firebaseConfig");
 
-// // Utility: Send push notification to users using Firebase
-// const sendPushNotification = async (user, message) => {
-//   try {
-//     if (!user.fcmToken) {
-//       console.log(`User ${user.email} does not have an FCM token.`);
-//       return;
-//     }
+// Define the logo URL (use the absolute URL of your logo image)
+const logoUrl =
+  "https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png";
 
-//     const payload = {
-//       notification: {
-//         title: "Class Start Reminder",
-//         body: message,
-//       },
-//       data: {
-//         userId: user._id.toString(),
-//         type: "class_reminder",
-//       },
-//     };
+// Schedule a task to run every minute to check for upcoming classes
+cron.schedule("* * * * *", async () => {
+  try {
+    // Convert current time to moment object for proper comparison
+    const currentTime = moment(); // Use moment without formatting to keep it as a moment object
+    console.log("Current time:", currentTime.format("YYYY-MM-DDTHH:mm"));
 
-//     const options = {
-//       priority: "high",
-//     };
+    const fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+    console.log("Looking for classes within the next 5 minutes...");
 
-//     await admin.messaging().sendToDevice(user.fcmToken, payload, options);
-//     console.log(`Push notification sent to ${user.email}`);
-//   } catch (error) {
-//     console.error("Error sending push notification:", error);
-//   }
-// };
+    const bookings = await Booking.find();
 
-// // Notify users of upcoming classes
-// const notifyUpcomingClasses = AsyncHandler(async () => {
-//   const currentDateTime = moment();
-//   const currentTime = currentDateTime.add(30, "minutes").format("HH:mm"); // Format time as HH:mm
-//   const currentDate = moment().format("YYYY-MM-DD") + "T00:00:00.000Z"; // Format date as YYYY-MM-DD
+    if (bookings.length === 0) {
+      console.log("No classes found.");
+      return;
+    }
 
-//   console.log(`Current Time: ${currentTime}, Current Date: ${currentDate}`);
+    console.log(`${bookings.length} booking(s) found.`);
 
-//   try {
-//     // Aggregate to find bookings with classes starting within the next 30 minutes
-//     const upcomingBookings = await Booking.aggregate([
-//       {
-//         $match: {
-//           // Match bookings where any date in the 'dates' array is greater than or equal to the current date
-//           dates: {
-//             $elemMatch: {
-//               $gte: currentDate, // Match dates greater than or equal to current date
-//             },
-//           },
-//           time: currentTime, // Match the time exactly
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "users", // Assuming the user collection is named "users"
-//           localField: "user", // "user" is the reference field in the Booking model
-//           foreignField: "_id",
-//           as: "userDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$userDetails", // Unwind the userDetails array to get a single object
-//       },
-//       {
-//         $lookup: {
-//           from: "classes", // Assuming the class collection is named "classes"
-//           localField: "class", // "class" is the reference field in the Booking model
-//           foreignField: "_id",
-//           as: "classDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$classDetails", // Unwind the classDetails array to get a single object
-//       },
-//       {
-//         $project: {
-//           "userDetails.email": 1,
-//           "userDetails._id": 1,
-//           "userDetails.fcmToken": 1,
-//           "classDetails.name": 1,
-//         },
-//       },
-//     ]);
+    for (const booking of bookings) {
+      const bookHoursNMinute = moment(booking?.time, "HH:mm");
+      const minuteDifference =
+        bookHoursNMinute.minutes() - currentTime.minutes();
+      if (
+        bookHoursNMinute.hours() >= currentTime.hours() &&
+        minuteDifference <= 5 &&
+        minuteDifference >= 0
+      ) {
+        console.log("Processing booking:", booking._id);
 
-//     if (!upcomingBookings || upcomingBookings.length === 0) {
-//       console.log("No upcoming classes in the next 30 minutes.");
-//       return;
-//     }
+        const user = await User.findById(booking.user);
+        if (!user || !user.deviceToken) {
+          console.log(`No device token for user ${booking.user}`);
+          continue;
+        }
 
-//     // Notify users
-//     for (const booking of upcomingBookings) {
-//       const message = `Your class "${booking.classDetails.name}" is starting in less than 30 minutes. Please be prepared.`;
-//       console.log(
-//         `Notifying user ${booking.userDetails.email} about class "${booking.classDetails.name}"`
-//       );
+        console.log(
+          `User found: ${user._id}, Sending notification to device token: ${user.deviceToken}`
+        );
 
-//       // Send push notification
-//       await sendPushNotification(booking.userDetails, message);
+        console.log("Class is starting within the next 5 minutes.");
+        const message = {
+          notification: {
+            title: "Upcoming Class Reminder",
+            body: `Your class is starting in 5 minutes at .`,
+            imageUrl: logoUrl,
+          },
+          token: user.deviceToken,
+        };
+        const response = await admin.messaging().send(message);
+        console.log("Successfully sent message:", response);
+      } else return console.log("No classes found within the next 5 minutes.");
+    }
+  } catch (error) {
+    console.error("Error sending push notifications:", error);
+  }
+});
 
-//       // Optionally save the notification in the database
-//       const notification = new Notification({
-//         userId: booking.userDetails._id,
-//         message,
-//         subject: "Class Start Reminder",
-//       });
-//       await notification.save();
-//     }
+// Get all bookings
+const getAllBookings = AsyncHandler(async (req, res) => {
+  const bookings = await Booking.find();
 
-//     console.log(
-//       `Notifications sent for ${upcomingBookings.length} upcoming classes.`
-//     );
-//   } catch (error) {
-//     console.error(
-//       "Error finding upcoming bookings or sending notifications:",
-//       error
-//     );
-//   }
-// });
+  res.status(200).json({
+    success: true,
+    message: "Bookings fetched successfully",
+    data: bookings,
+  });
+});
 
-// // Schedule the task to run every minute
-// cron.schedule("* * * * *", () => {
-//   console.log("Running a task every minute to check for upcoming classes...");
-//   notifyUpcomingClasses();
-// });
-
-// Create a booking
 const createBooking = AsyncHandler(async (req, res) => {
   const { class: classId, user: userId, dates, location } = req.body;
 
@@ -170,27 +112,6 @@ const createBooking = AsyncHandler(async (req, res) => {
     success: true,
     message: "Booking created successfully",
     data: newBooking,
-  });
-});
-
-// Get all bookings
-const getAllBookings = AsyncHandler(async (req, res) => {
-  const bookings = await Booking.find()
-    .populate("user")
-    .populate("trainer")
-    .populate("class")
-    .populate("location");
-  // .populate({
-  //   path: "class",
-  //   populate: {
-  //     path: "locations",
-  //   },
-  // });
-
-  res.status(200).json({
-    success: true,
-    message: "Bookings fetched successfully",
-    data: bookings,
   });
 });
 
@@ -539,7 +460,7 @@ const showAvailability = async (req, res) => {
     const bookings = await Booking.find({ class: classId });
     const formattedBookings = bookings.filter((booking) =>
       booking.dates.some((dbDate) => {
-        const adjustedDate = moment(dbDate).utcOffset(330).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:30)
+        const adjustedDate = moment(dbDate).utcOffset(35).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:5)
         return adjustedDate === date;
       })
     );
