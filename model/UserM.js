@@ -18,6 +18,7 @@ var UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    image: { type: String },
     deviceToken: { type: String },
     token: { type: String },
     emergencyPhone: { type: String },

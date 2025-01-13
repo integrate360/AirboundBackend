@@ -6,54 +6,72 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
 const { generatePassword } = require("../utils/Functions");
 
-const admin = require('../config/firebaseConfig');
+const admin = require("../config/firebaseConfig");
+const { uploadImage } = require("../helper/fileUploadeService");
 
 const sendPushNotification = async (req, res) => {
   try {
     // Get the user from the database based on user ID
-    const user = await User.findById(req.params.userId);  
+    const user = await User.findById(req.params.userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const { deviceToken } = user;  // Get deviceToken from the user
+    const { deviceToken } = user; // Get deviceToken from the user
 
     // Check if the device token exists
     if (!deviceToken) {
-      return res.status(400).json({ message: 'Device token is missing' });
+      return res.status(400).json({ message: "Device token is missing" });
     }
 
     // Define the logo URL (use the absolute URL of your logo image)
-    const logoUrl = 'https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png'; 
+    const logoUrl =
+      "https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png";
 
     // Create message payload
     const message = {
       notification: {
-        title: 'New Notification',
-        body: req.body.message,  // Message from the request body
-        imageUrl: logoUrl,  // Include logo image in the notification
+        title: "New Notification",
+        body: req.body.message, // Message from the request body
+        imageUrl: logoUrl, // Include logo image in the notification
       },
-      token: deviceToken,  // Use the user's stored device token
+      token: deviceToken, // Use the user's stored device token
     };
 
     // Send notification
     const response = await admin.messaging().send(message);
-    console.log('Successfully sent message:', response);
+    console.log("Successfully sent message:", response);
 
-    res.status(200).json({ message: 'Notification sent successfully', response });
+    res
+      .status(200)
+      .json({ message: "Notification sent successfully", response });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ message: 'Error sending notification', error });
+    console.error("Error sending message:", error);
+    res.status(500).json({ message: "Error sending notification", error });
   }
 };
 
 const register = asyncHandler(async (req, res) => {
   const { email, password, phone, name, deviceToken } = req.body;
+  let imgUrl = "";
+
+  // Check if the image is uploaded and use the uploadImage function
+  if (req.file) {
+    try {
+      // Upload the image to AWS S3 using the uploadImage function
+      imgUrl = await uploadImage(req.file);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      throw new Error("Image upload failed");
+    }
+  }
 
   // Check if user already exists with the provided email
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json({ message: "User already exists with this email" });
+    return res
+      .status(400)
+      .json({ message: "User already exists with this email" });
   }
 
   try {
@@ -66,8 +84,9 @@ const register = asyncHandler(async (req, res) => {
       name,
       email,
       phone,
-      deviceToken,  // Save the device token received from the client
+      deviceToken, // Save the device token received from the client
       password: hashedPassword,
+      image: imgUrl,
     });
 
     // Save the new user to the database
@@ -75,7 +94,7 @@ const register = asyncHandler(async (req, res) => {
 
     // Generate a token for the user (JWT or custom token)
     const token = genrateToken(newUser._id); // Ensure the generateToken function is correct
-    newUser.token = token;  // Store the token (optional, depending on your needs)
+    newUser.token = token; // Store the token (optional, depending on your needs)
 
     // Optionally, save the token to the user document (if needed)
     await newUser.save();
@@ -331,6 +350,31 @@ const getUser = asyncHandler(async (req, res) => {
     res.status(400).send({ error: error.message });
   }
 });
+const updateUser = async (req, res) => {
+  try {
+    let imgUrl = "";
+    // Check if the image is uploaded and use the uploadImage function
+    if (req.file) {
+      try {
+        // Upload the image to AWS S3 using the uploadImage function
+        imgUrl = await uploadImage(req.file);
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        throw new Error("Image upload failed");
+      }
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, req.body);
+    if (req.file) {
+      user.image = imgUrl;
+    }
+    await user.save();
+    if (!user) res.status(400).json({ message: "User Not Found" });
+    res.status(200).json({ message: "User Updated Successfully", user });
+  } catch (error) {
+    console.log(error.message);
+    res.send(500).json({ error: error?.message });
+  }
+};
 const deleteUser = asyncHandler(async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
@@ -359,5 +403,6 @@ module.exports = {
   logout,
   register,
   forgotPassword,
+  updateUser,
   changePassword,
 };
