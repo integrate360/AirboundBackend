@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const genrateToken = require("../utils/genrateToken");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
-const { generatePassword } = require("../utils/Functions");
+const { generatePassword, generateOtp } = require("../utils/Functions");
 
 const admin = require("../config/firebaseConfig");
 const { uploadImage } = require("../helper/fileUploadeService");
@@ -194,7 +194,7 @@ const login = asyncHandler(async (req, res) => {
 //   }
 // });
 
-const forgotPassword = asyncHandler(async (req, res) => {
+const generatePasswordController = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   // Check if user already exists
@@ -227,7 +227,55 @@ const forgotPassword = asyncHandler(async (req, res) => {
     res.status(201).json({ message: error.message }); // 500 for server errors
   }
 });
+const genrateForgotOtp = async (req, res) => {
+  try {
+    const user = await User.find({ email: req.body.email });
+    if (!user)
+      res.status(404).json({ message: "user not found with this email" });
+    const otp = generateOtp();
+    user.otp = otp;
+    await user.save();
+    const msg = {
+      to: req.body.email,
+      from: "airboundfitness@gmail.com",
+      subject: "Otp Verfication For Forgot Password",
+      text: `<p>Your Forgot Password Otp is genrated, simply enter this <b>${otp}</b> to verify your account than you can change your Password</p>`,
+      html: `<p>Your Forgot Password Otp is genrated, simply enter this <b>${otp}</b> to verify your account than you can change your Password</p>`,
+    };
 
+    await sgMail.send(msg);
+    res
+      .status(200)
+      .json({ message: "Otp sent successfully to your email", user });
+  } catch (error) {
+    console.log(error?.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+const forgotPassword = async (req, res) => {
+  const { password, email } = req.body;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  try {
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    existingUser.password = hashedPassword;
+    await existingUser.save();
+
+    // Generate token
+    const token = genrateToken(existingUser._id); // Ensure function name is correct
+    existingUser.token = token; // Set token on existingUser object
+    await existingUser.save();
+
+    res.status(200).json(existingUser); // Use 201 for successful resource creation
+  } catch (error) {
+    res.status(201).json({ message: error.message }); // 500 for server errors
+  }
+};
 const changePassword = asyncHandler(async (req, res) => {
   const { password, newPassword, email } = req.body;
 
@@ -396,13 +444,14 @@ module.exports = {
   login,
   getAllUsers,
   resetPassword,
-  forgotPassword,
+  generatePasswordController,
   totalUsers,
   deleteUser,
   getUser,
   logout,
   register,
-  forgotPassword,
   updateUser,
   changePassword,
+  genrateForgotOtp,
+  forgotPassword,
 };

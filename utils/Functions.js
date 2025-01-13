@@ -32,5 +32,9 @@ function generatePassword() {
     .sort(() => Math.random() - 0.5)
     .join("");
 }
-
-module.exports = { generatePassword };
+function generateOtp() {
+  // Generate a random 6-digit number
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  return otp;
+}
+module.exports = { generatePassword, generateOtp };
