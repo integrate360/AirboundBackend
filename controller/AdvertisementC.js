@@ -35,38 +35,42 @@ const { uploadImage } = require("../helper/fileUploadeService");
 const createAdvertisement = AsyncHandler(async (req, res) => {
   const { class: classId, name, description } = req.body;
 
-  // Validate required fields
-  if (!name || !description || !classId) {
-    throw new Error("All fields are required");
-  }
-
-  let imgUrl = "";
-
-  // Check if the image is uploaded and use the uploadImage function
-  if (req.file) {
-    try {
-      // Upload the image to AWS S3 using the uploadImage function
-      imgUrl = await uploadImage(req.file);
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      throw new Error("Image upload failed");
+  try {
+    // Validate required fields
+    if (!name || !description || !classId) {
+      throw new Error("All fields are required");
     }
+
+    let imgUrl = "";
+
+    // Check if the image is uploaded and use the uploadImage function
+    if (req.file) {
+      try {
+        // Upload the image to AWS S3 using the uploadImage function
+        imgUrl = await uploadImage(req.file);
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        throw new Error("Image upload failed");
+      }
+    }
+
+    // Create a new advertisement with the AWS S3 URL for the image
+    const newAd = await Advertisement.create({
+      class: classId,
+      name,
+      description,
+      image: imgUrl, // Store the AWS S3 image URL
+    });
+
+    // Send the response
+    res.status(201).json({
+      success: true,
+      message: "Advertisement created successfully",
+      data: newAd,
+    });
+  } catch (error) {
+    res.status(303).json({ message: error?.message });
   }
-
-  // Create a new advertisement with the AWS S3 URL for the image
-  const newAd = await Advertisement.create({
-    class: classId,
-    name,
-    description,
-    image: imgUrl, // Store the AWS S3 image URL
-  });
-
-  // Send the response
-  res.status(201).json({
-    success: true,
-    message: "Advertisement created successfully",
-    data: newAd,
-  });
 });
 // Get all advertisements
 const getAllAdvertisements = AsyncHandler(async (req, res) => {

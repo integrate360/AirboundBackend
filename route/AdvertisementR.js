@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const multer = require('multer');
+const multer = require("multer");
 const {
   createAdvertisement,
   getAllAdvertisements,
@@ -17,14 +17,12 @@ const { authMiddleware, isAdmin } = require("../middleware/authMiddleware.js");
 // Advertisement Routes
 router.post(
   "/ads",
-  authMiddleware, // Middleware to ensure user is authenticated
-  isAdmin, // Middleware to ensure user is an admin
   upload.single("image"), // Middleware to handle image upload
   createAdvertisement // Controller to handle advertisement creation
 );
 
 router.get(
-  "/ads",// Optional: Require authentication for listing ads
+  "/ads", // Optional: Require authentication for listing ads
   getAllAdvertisements // Controller to fetch all advertisements
 );
 

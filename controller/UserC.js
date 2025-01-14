@@ -229,9 +229,11 @@ const generatePasswordController = asyncHandler(async (req, res) => {
 });
 const genrateForgotOtp = async (req, res) => {
   try {
-    const user = await User.find({ email: req.body.email });
+    const user = await User.findOne({ email: req.body.email });
     if (!user)
-      res.status(404).json({ message: "user not found with this email" });
+      return res
+        .status(404)
+        .json({ message: "user not found with this email" });
     const otp = generateOtp();
     user.otp = otp;
     await user.save();
@@ -253,10 +255,15 @@ const genrateForgotOtp = async (req, res) => {
   }
 };
 const forgotPassword = async (req, res) => {
-  const { password, email } = req.body;
+  const { password, email, otp } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
+  if (!existingUser)
+    return res.status(404).json({ message: "user not found with this email" });
+  if (existingUser.otp != otp)
+    return res.status(404).json({ message: "OTP validation failed" });
+
   try {
     // Hash the password
     const salt = await bcrypt.genSalt(10);
