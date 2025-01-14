@@ -81,6 +81,7 @@ const register = asyncHandler(async (req, res) => {
 
     // Create a new user with the provided data
     const newUser = new User({
+      ...req.body,
       name,
       email,
       phone,
