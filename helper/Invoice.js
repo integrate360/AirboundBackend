@@ -196,7 +196,7 @@ const sendInvoiceToUser = async (user, booking) => {
     };
 
     const adminEmail = {
-      to: "vinodku4848@gmail.com",
+      to: "airboundfitness@gmail.com",
       subject: "Airbound Fitness - You Have a New Booking",
       body: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
