@@ -14,24 +14,23 @@ const admin = require("../config/firebaseConfig");
 // Define the logo URL (use the absolute URL of your logo image)
 const logoUrl =
   "https://airboundfitnessnew.s3.ap-south-1.amazonaws.com/airboundfitness/1736425167169-ASS.png";
-  function convertTo12HourFormat(time) {
-    // Split the time into hours and minutes
-    let [hours, minutes] = time.split(':');
+function convertTo12HourFormat(time) {
+  // Split the time into hours and minutes
+  let [hours, minutes] = time.split(":");
 
-    // Convert hours to an integer
-    hours = parseInt(hours);
+  // Convert hours to an integer
+  hours = parseInt(hours);
 
-    // Determine AM or PM
-    const period = hours >= 12 ? 'PM' : 'AM';
+  // Determine AM or PM
+  const period = hours >= 12 ? "PM" : "AM";
 
-    // Convert to 12-hour format
-    hours = hours % 12;
-    hours = hours === 0 ? 12 : hours; // Handle 12 AM/PM
+  // Convert to 12-hour format
+  hours = hours % 12;
+  hours = hours === 0 ? 12 : hours; // Handle 12 AM/PM
 
-    // Format the time as "hh:mm AM/PM"
-    return `${hours}:${minutes} ${period}`;
+  // Format the time as "hh:mm AM/PM"
+  return `${hours}:${minutes} ${period}`;
 }
-
 
 // Schedule a task to run every minute to check for upcoming classes
 cron.schedule("* * * * *", async () => {
@@ -77,7 +76,9 @@ cron.schedule("* * * * *", async () => {
         const message = {
           notification: {
             title: "Upcoming Class Reminder",
-            body: `Your class is starting in 30 minutes at ${convertTo12HourFormat(booking?.time)}.`,
+            body: `Your class is starting in 30 minutes at ${convertTo12HourFormat(
+              booking?.time
+            )}.`,
             imageUrl: logoUrl,
           },
           token: user.deviceToken,
@@ -218,6 +219,73 @@ const updateBooking = AsyncHandler(async (req, res) => {
   });
 });
 
+const sendNotificationToUsers = AsyncHandler(async (req, res) => {
+  const { ids, dates, users } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new Error("Please provide an array of IDs.");
+  }
+
+  if (!dates || !Array.isArray(dates) || dates.length === 0) {
+    throw new Error("Please provide new dates for rescheduling.");
+  }
+
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    throw new Error("Please provide an array of users.");
+  }
+
+  await Booking.updateMany({ _id: { $in: ids } }, { $set: { dates } });
+
+  const uniqueUsers = Array.from(
+    new Set(users.map((user) => user._id.toString()))
+  );
+
+  const sendEmailsPromises = uniqueUsers.map((userId) =>
+    sendEmailToUser(userId, dates)
+  );
+
+  await Promise.all(sendEmailsPromises);
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Bookings updated and emails sent to all users about the new dates.",
+  });
+});
+
+const sendEmailToUser = async (userId, newDates) => {
+  const user = await User.findById(userId);
+
+  if (!user || !user.email) {
+    console.error(`No email found for user with ID: ${userId}`);
+    return;
+  }
+
+  const emailContent = `
+    <p>Dear ${user.name},</p>
+    <p>Your class has been rescheduled. The new dates are:</p>
+    <ul>
+      ${newDates
+        .map((date) => `<li>${new Date(date).toLocaleDateString()}</li>`)
+        .join("")}
+    </ul>
+    <p>We apologize for any inconvenience caused and hope to see you at the new dates!</p>
+  `;
+
+  const msg = {
+    to: user.email,
+    from: "airboundfitness@gmail.com",
+    subject: "Your Class Has Been Rescheduled",
+    html: emailContent,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log(`Email sent to ${user.email}`);
+  } catch (error) {
+    console.error(`Error sending email to ${user.email}:`, error);
+  }
+};
+
 // Delete a booking by ID
 const deleteBooking = AsyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -353,14 +421,13 @@ const reschedule = AsyncHandler(async (req, res) => {
     const { newDate, date } = req.body;
     const { id } = req.params;
 
-    // Validate booking with aggregation
     const booking = await Booking.aggregate([
       {
         $match: { _id: new mongoose.Types.ObjectId(id) },
       },
       {
         $lookup: {
-          from: "classes", // Replace "classes" with your actual collection name
+          from: "classes",
           localField: "class",
           foreignField: "_id",
           as: "classDetails",
@@ -422,10 +489,9 @@ const reschedule = AsyncHandler(async (req, res) => {
       `;
 
       try {
-        // Send email using SendGrid
         const response = await sgMail.send({
           to: user.email,
-          from: "airboundfitness@gmail.com", // Ensure this is verified in SendGrid
+          from: "airboundfitness@gmail.com",
           subject: "Booking Rescheduled Successfully",
           html: emailContent,
         });
@@ -529,6 +595,7 @@ const showAvailability = async (req, res) => {
 };
 
 module.exports = {
+  sendNotificationToUsers,
   getTotalAmount,
   createBooking,
   getAllBookings,

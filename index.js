@@ -23,6 +23,7 @@ app.use("/api", require("./route/PaymentR.js"));
 app.use("/api", require("./route/StaffR.js"));
 app.use("/api", require("./route/PackageR.js"));
 app.use("/api", require("./route/EnquiryR.js"));
+app.use("/api", require("./route/bacheloretteR.js"));
 
 const { errorHandler } = require("./middleware/errorHandler");
 app.use(errorHandler);
