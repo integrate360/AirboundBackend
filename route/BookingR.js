@@ -11,6 +11,7 @@ const {
   availableSlots,
   reschedule,
   showAvailability,
+  sendNotificationToUsers,
 } = require("../controller/BookingC");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
@@ -23,6 +24,12 @@ router.post("/booking/availability", showAvailability);
 router.get("/booking/user/:id", authMiddleware, getBookingsByUser);
 router.get("/bookings/available-slots", availableSlots);
 router.put("/booking/reschedule/:id", authMiddleware, reschedule);
+router.put(
+  "/booking/class/reschedule",
+  authMiddleware,
+  // isAdmin,
+  sendNotificationToUsers
+);
 router.put("/booking/:id", authMiddleware, isAdmin, updateBooking);
 router.delete("/booking/:id", authMiddleware, isAdmin, deleteBooking);
 

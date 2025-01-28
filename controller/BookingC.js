@@ -10,6 +10,7 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const admin = require("../config/firebaseConfig");
+const { sendEmailToUser } = require("../helper/EmailSender");
 
 // Define the logo URL (use the absolute URL of your logo image)
 const logoUrl =
@@ -220,27 +221,27 @@ const updateBooking = AsyncHandler(async (req, res) => {
 });
 
 const sendNotificationToUsers = AsyncHandler(async (req, res) => {
-  const { ids, dates, users } = req.body;
+  const { ids, dates, users, class: classBody } = req.body;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    throw new Error("Please provide an array of IDs.");
+    return res.status(300).json({ message: "Please provide an array of IDs." });
   }
 
   if (!dates || !Array.isArray(dates) || dates.length === 0) {
-    throw new Error("Please provide new dates for rescheduling.");
+    return res
+      .status(300)
+      .json({ message: "Please provide new dates for rescheduling." });
   }
 
   if (!users || !Array.isArray(users) || users.length === 0) {
-    throw new Error("Please provide an array of users.");
+    return res
+      .status(300)
+      .json({ message: "Please provide an array of users." });
   }
 
   await Booking.updateMany({ _id: { $in: ids } }, { $set: { dates } });
 
-  const uniqueUsers = Array.from(
-    new Set(users.map((user) => user._id.toString()))
-  );
-
-  const sendEmailsPromises = uniqueUsers.map((userId) =>
-    sendEmailToUser(userId, dates)
+  const sendEmailsPromises = users.map((u) =>
+    sendEmailToUser(u, dates, classBody)
   );
 
   await Promise.all(sendEmailsPromises);
@@ -251,40 +252,6 @@ const sendNotificationToUsers = AsyncHandler(async (req, res) => {
       "Bookings updated and emails sent to all users about the new dates.",
   });
 });
-
-const sendEmailToUser = async (userId, newDates) => {
-  const user = await User.findById(userId);
-
-  if (!user || !user.email) {
-    console.error(`No email found for user with ID: ${userId}`);
-    return;
-  }
-
-  const emailContent = `
-    <p>Dear ${user.name},</p>
-    <p>Your class has been rescheduled. The new dates are:</p>
-    <ul>
-      ${newDates
-        .map((date) => `<li>${new Date(date).toLocaleDateString()}</li>`)
-        .join("")}
-    </ul>
-    <p>We apologize for any inconvenience caused and hope to see you at the new dates!</p>
-  `;
-
-  const msg = {
-    to: user.email,
-    from: "airboundfitness@gmail.com",
-    subject: "Your Class Has Been Rescheduled",
-    html: emailContent,
-  };
-
-  try {
-    await sgMail.send(msg);
-    console.log(`Email sent to ${user.email}`);
-  } catch (error) {
-    console.error(`Error sending email to ${user.email}:`, error);
-  }
-};
 
 // Delete a booking by ID
 const deleteBooking = AsyncHandler(async (req, res) => {
