@@ -14,7 +14,7 @@ const createBachelorette = async (req, res) => {
 // Get all bachelorette events
 const getAllBachelorettes = async (req, res) => {
   try {
-    const bachelorettes = await Bachelorette.find();
+    const bachelorettes = await Bachelorette.find().populate("user");
     res.status(200).json({ success: true, data: bachelorettes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

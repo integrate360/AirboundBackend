@@ -23,11 +23,6 @@ const bacheloretteSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-
-    location: {
-      type: String,
-      required: true,
-    },
   },
   { timestamps: true }
 );
