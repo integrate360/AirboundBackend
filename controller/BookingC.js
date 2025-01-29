@@ -290,6 +290,138 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
   }
 });
 
+// const getAllLastBookingDates = AsyncHandler(async (req, res) => {
+//   try {
+//     // Fetch all bookings with populated fields
+//     const bookings = await Booking.find()
+//       .populate("trainer")
+//       .populate("class")
+//       .populate("user");
+
+//     if (!bookings.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No bookings found",
+//       });
+//     }
+//     const userBookingDates = {};
+
+//     bookings.forEach((booking) => {
+//       const userId = booking.user._id.toString();
+//       const mostRecentDate = new Date(Math.max(...booking.dates.map(date => new Date(date))));
+//       if (!userBookingDates[userId] || mostRecentDate > userBookingDates[userId].date) {
+//         userBookingDates[userId] = {
+//           date: mostRecentDate,
+//           email: booking.user.email,
+//         };
+//       }
+//     });
+//     const result = Object.keys(userBookingDates).map((userId) => ({
+//       userId,
+//       email: userBookingDates[userId].email,
+//       lastBookingDate: userBookingDates[userId].date,
+//     }));
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Last booking dates for all users fetched successfully",
+//       data: result,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "An error occurred while fetching last booking dates for all users",
+//     });
+//   }
+// });
+
+// Function to fetch last booking dates and send emails
+const sendExpiringBookingEmails = async () => {
+  try {
+    console.log("Running Cron Job: Checking expiring bookings...");
+
+    const bookings = await Booking.find()
+      .populate("trainer")
+      .populate("class")
+      .populate("user");
+
+    if (!bookings.length) {
+      console.log("No bookings found");
+      return;
+    }
+
+    const userBookingDates = {};
+
+    bookings.forEach((booking) => {
+      const userId = booking.user._id.toString();
+
+      const mostRecentDate = new Date(
+        Math.max(...booking.dates.map((date) => new Date(date)))
+      );
+
+      if (
+        !userBookingDates[userId] ||
+        mostRecentDate > userBookingDates[userId].date
+      ) {
+        userBookingDates[userId] = {
+          date: mostRecentDate,
+          email: booking.user.email,
+          name: booking.user.name,
+          className: booking.class.name,
+          trainerName: booking.trainer.name,
+        };
+      }
+    });
+
+    const today = new Date();
+    const expiringSoonUsers = Object.values(userBookingDates).filter((user) => {
+      const expiryDate = new Date(user.date);
+      const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+      return daysLeft === 4;
+    });
+
+    if (expiringSoonUsers.length === 0) {
+      console.log("No bookings expiring in 4 days");
+      return;
+    }
+
+    const emailsSent = await Promise.all(
+      expiringSoonUsers.map(async (user) => {
+        const msg = {
+          to: user.email,
+          from: "airboundfitness@gmail.com",
+          subject: "Your Class is Expiring Soon - Please Renew!",
+          text: `Hello ${user.name},\n\nYour class (${user.className}) with trainer ${user.trainerName} is expiring soon.\nPlease renew before your session ends!\n\nThank you!`,
+          html: `<p>Hello <strong>${user.name}</strong>,</p>
+                <p>Your class <strong>${user.className}</strong> with trainer <strong>${user.trainerName}</strong> is expiring in <strong>4 days</strong>.</p>
+                <p>Please renew before your session ends!</p>
+                <p>Thank you!</p>`,
+        };
+
+        return sgMail.send(msg);
+      })
+    );
+
+    console.log(`Emails sent to ${emailsSent.length} users.`);
+  } catch (error) {
+    console.error("Error sending booking expiry emails:", error);
+  }
+};
+
+// Schedule the cron job to run every day at 8 AM
+cron.schedule(
+  "0 8 * * *",
+  async () => {
+    await sendExpiringBookingEmails();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
+
+console.log("Cron job scheduled to run every day at 8 AM...");
+
 const getDatesBetween = (startDate, endDate) => {
   const dates = [];
   let currentDate = new Date(startDate);

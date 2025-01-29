@@ -13,7 +13,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "airbound", 
+    folder: "airbound",
     allowed_formats: ["jpg", "jpeg", "png", "gif"], // Allowed file formats
   },
 });
@@ -28,7 +28,7 @@ const handleUpload = (req, res) => {
     }
 
     // The uploaded image's URL from Cloudinary
-    const image = req.file.path;  // This is the URL that Cloudinary returns
+    const image = req.file.path; // This is the URL that Cloudinary returns
 
     res.status(200).json({
       message: "Image uploaded successfully",
