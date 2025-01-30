@@ -280,7 +280,7 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
       .populate("trainer")
       .populate("class")
       .populate("package")
-      .location("location")
+      .populate("location")
       .populate("user");
     res.status(200).json({
       success: true,
@@ -289,6 +289,7 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.status(300).json({ message: "something went wrong" });
   }
 });
 
