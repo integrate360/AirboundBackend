@@ -184,8 +184,6 @@ const createPayment = AsyncHandler(async (req, res) => {
 });
 const createPackagePayment = AsyncHandler(async (req, res) => {
   const { package, user, amount, bookings } = req.body;
-  console.log("Payment request body:", req.body); // Debug log
-
   // Validate required fields
   if (!user || !amount || !bookings) {
     return res
@@ -223,6 +221,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
         location: book?.location?._id,
         time: book?.time,
         duration: book?.classDuration,
+        package,
       });
       await newBooking.save();
       return newBooking;

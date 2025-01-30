@@ -233,7 +233,7 @@ const genrateForgotOtp = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user)
       return res
-        .status(404)
+        .status(201)
         .json({ message: "user not found with this email" });
     const otp = generateOtp();
     user.otp = otp;

@@ -8,6 +8,7 @@ const BookingSchema = new mongoose.Schema(
       ref: "Class",
       required: true,
     },
+    package: { type: mongoose.Schema.Types.ObjectId, ref: "Package" },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
