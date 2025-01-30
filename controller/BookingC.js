@@ -279,6 +279,8 @@ const getBookingsByUser = AsyncHandler(async (req, res) => {
     const bookings = await Booking.find({ user: id })
       .populate("trainer")
       .populate("class")
+      .populate("package")
+      .location("location")
       .populate("user");
     res.status(200).json({
       success: true,
