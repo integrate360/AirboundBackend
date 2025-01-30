@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const EnquirySchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    numberOfPeople: { type: Number },
+    people: { type: Number },
     date: { type: Date },
-    location : { type: String },
+    location: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
   },
   { timestamps: true }
 );

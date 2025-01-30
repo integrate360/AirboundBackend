@@ -7,22 +7,9 @@ const bacheloretteSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    eventName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    notes: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    date: {
-      type: Date,
-      required: true,
-    },
+    people: { type: Number },
+    date: { type: Date },
+    location: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
   },
   { timestamps: true }
 );
