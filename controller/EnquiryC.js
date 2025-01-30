@@ -33,3 +33,18 @@ exports.deleteEnquiry = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports. getEnquiryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const enquiry = await Enquiry.findById(id).populate("user");
+
+    if (!enquiry) {
+      return res.status(404).json({ message: "Enquiry not found" });
+    }
+
+    res.status(200).json(enquiry);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

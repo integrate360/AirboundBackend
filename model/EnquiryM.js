@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
-var EnquirySchema = new mongoose.Schema(
+
+const EnquirySchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    numberOfPeople: { type: Number },
+    date: { type: Date },
+    location : { type: String },
   },
   { timestamps: true }
 );
