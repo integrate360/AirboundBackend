@@ -2,8 +2,10 @@ const sgMail = require("@sendgrid/mail");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
-sgMail.setApiKey(process.env.Sendgrid_Key);
+const ics = require("ics"); // For generating calendar events
+sgMail.setApiKey(process.env.Sendgrid_Key); // Set your SendGrid API key
 
+// Function to add company details to the PDF
 const addCompanyDetails = (doc) => {
   doc
     .fontSize(16)
@@ -28,6 +30,7 @@ const addCompanyDetails = (doc) => {
   doc.moveDown(4);
 };
 
+// Function to add customer details to the PDF
 const addBillToSection = (doc, user) => {
   doc.fontSize(16).fillColor("#007bff").text("Customer Details").moveDown(0.5);
 
@@ -44,6 +47,7 @@ const addBillToSection = (doc, user) => {
   doc.moveDown(4);
 };
 
+// Function to add booking details to the PDF
 const addBookingDetails = (doc, booking) => {
   doc.fontSize(16).fillColor("#007bff").text("Booking Details").moveDown(0.5);
 
@@ -67,6 +71,7 @@ const addBookingDetails = (doc, booking) => {
   doc.moveDown(4);
 };
 
+// Function to add contact information to the PDF
 const addContactInfo = (doc) => {
   doc.fontSize(16).fillColor("#007bff").text("Contact Details").moveDown(0.5);
 
@@ -83,6 +88,7 @@ const addContactInfo = (doc) => {
   doc.moveDown(2);
 };
 
+// Function to generate the PDF invoice
 const generatePDFInvoice = (booking, user, outputPath) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: "A4" });
@@ -96,7 +102,7 @@ const generatePDFInvoice = (booking, user, outputPath) => {
       doc.image(logoPath, 50, 30, { width: 60 });
     }
 
-    // Invoice Details - Moved to top right with better formatting
+    // Invoice Details
     const invoiceDate = new Date().toLocaleDateString("en-GB");
     const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -115,13 +121,13 @@ const generatePDFInvoice = (booking, user, outputPath) => {
       .lineTo(550, 120)
       .stroke();
 
-    // Add sections with improved spacing
+    // Add sections
     addCompanyDetails(doc);
     addBillToSection(doc, user);
     addBookingDetails(doc, booking);
     addContactInfo(doc);
 
-    // Footer with better styling
+    // Footer
     doc
       .fontSize(14)
       .fillColor("#007bff")
@@ -140,21 +146,16 @@ const generatePDFInvoice = (booking, user, outputPath) => {
     writeStream.on("error", reject);
   });
 };
-const sendEmail = async ({ to, subject, body, attachmentPath }) => {
+
+// Function to send an email with attachments
+const sendEmail = async ({ to, subject, text, html, attachments }) => {
   const msg = {
     to,
-    from: "airboundfitness@gmail.com",
+    from: "airboundfitness@gmail.com", // Replace with your email
     subject,
-    text: body,
-    html: body,
-    attachments: [
-      {
-        content: fs.readFileSync(attachmentPath).toString("base64"),
-        filename: "Invoice.pdf",
-        type: "application/pdf",
-        disposition: "attachment",
-      },
-    ],
+    text,
+    html,
+    attachments,
   };
 
   try {
@@ -168,6 +169,7 @@ const sendEmail = async ({ to, subject, body, attachmentPath }) => {
   }
 };
 
+// Function to send the invoice and calendar event to the user and admin
 const sendInvoiceToUser = async (user, booking) => {
   if (!user?.email || !user?.name)
     throw new Error("User information is incomplete");
@@ -175,30 +177,73 @@ const sendInvoiceToUser = async (user, booking) => {
     throw new Error("Booking information is incomplete");
 
   const outputPath = path.join(__dirname, "Invoice.pdf");
+  const eventPath = path.join(__dirname, "Event.ics");
 
   try {
+    // Generate the PDF invoice
     await generatePDFInvoice(booking, user, outputPath);
 
-    const customerEmail = {
+    // Generate the .ics calendar event
+    const event = {
+      start: booking.dates[0].split("-").map(Number), // Start date
+      end: booking.dates[booking.dates.length - 1].split("-").map(Number), // End date
+      title: `Booking for ${booking.className}`,
+      description: `Thank you for booking ${booking.className} at ${booking.location || "N/A"}.`,
+      location: booking.location || "N/A",
+      status: "CONFIRMED",
+      busyStatus: "BUSY",
+      organizer: { name: "Airbound Fitness", email: "hello@airbound.in" },
+      attendees: [{ name: user.name, email: user.email }],
+    };
+
+    ics.createEvent(event, (error, value) => {
+      if (error) {
+        console.error("Failed to create calendar event:", error);
+        throw new Error("Error creating calendar event");
+      }
+      fs.writeFileSync(eventPath, value); // Save the .ics file
+    });
+
+    // Prepare email attachments
+    const attachments = [
+      {
+        content: fs.readFileSync(outputPath).toString("base64"),
+        filename: "Invoice.pdf",
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+      {
+        content: fs.readFileSync(eventPath).toString("base64"),
+        filename: "Event.ics",
+        type: "text/calendar",
+        disposition: "attachment",
+      },
+    ];
+
+    // Send email to the customer
+    await sendEmail({
       to: user.email,
       subject: `Invoice for Your Booking - ${booking.className}`,
-      body: `
+      text: `Thank you for your booking, ${user.name}! Please find your invoice and calendar event attached.`,
+      html: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
           <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
             <strong>Thank You for Your Booking, ${user.name}!</strong>
           </div>
           <p style="font-size: 16px; color: #555; text-align: center; margin-top: 20px;">
-            We are excited to confirm your booking. Please find your invoice attached.
+            We are excited to confirm your booking. Please find your invoice and calendar event attached.
           </p>
         </div>
       `,
-      attachmentPath: outputPath,
-    };
+      attachments,
+    });
 
-    const adminEmail = {
-      to: "airboundfitness@gmail.com",
+    // Send email to the admin
+    await sendEmail({
+      to: "airboundfitness@gmail.com", // Replace with admin email
       subject: "Airbound Fitness - You Have a New Booking",
-      body: `
+      text: `A new booking has been made by ${user.name}. Please find the details and invoice attached.`,
+      html: `
         <div style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
           <div style="background-color: #007bff; color: white; padding: 20px; text-align: center; font-size: 24px;">
             <strong>You Have a New Booking</strong>
@@ -219,19 +264,17 @@ const sendInvoiceToUser = async (user, booking) => {
           </ul>
         </div>
       `,
-      attachmentPath: outputPath,
-    };
+      attachments,
+    });
 
-    await Promise.all([sendEmail(customerEmail), sendEmail(adminEmail)]);
-
-    console.log(`Invoices sent successfully for booking: ${booking.className}`);
+    console.log(`Invoices and calendar event sent successfully for booking: ${booking.className}`);
   } catch (error) {
     console.error("Failed to send invoice:", error.message);
     throw new Error("Error sending invoice");
   } finally {
-    if (fs.existsSync(outputPath)) {
-      fs.unlinkSync(outputPath);
-    }
+    // Clean up temporary files
+    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    if (fs.existsSync(eventPath)) fs.unlinkSync(eventPath);
   }
 };
 
