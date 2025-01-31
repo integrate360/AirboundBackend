@@ -101,26 +101,50 @@ const getCategoryById = AsyncHandler(async (req, res) => {
   });
 });
 
-// Update a category by ID
 const updateCategory = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Validate ID
-  if (!id) throw new Error("Please provide an ID");
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Please provide an ID" });
+  }
 
-  const updatedCategory = await Category.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  try {
+    let updateData = { ...req.body };
 
-  if (!updatedCategory) throw new Error("Category not found with this ID");
+    // Check if an image is uploaded
+    if (req.file) {
+      try {
+        // Upload the image to AWS S3 and get the URL
+        const imgUrl = await uploadImage(req.file);
+        updateData.image = imgUrl; // Add the new image URL to update data
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        return res.status(500).json({ success: false, message: "Image upload failed" });
+      }
+    }
 
-  res.status(200).json({
-    success: true,
-    message: "Category updated successfully",
-    data: updatedCategory,
-  });
+    // Update category with new data
+    const updatedCategory = await Category.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedCategory) {
+      return res.status(404).json({ success: false, message: "Category not found with this ID" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Category updated successfully",
+      data: updatedCategory,
+    });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
 });
+
 
 // Delete a category by ID
 const deleteCategory = AsyncHandler(async (req, res) => {

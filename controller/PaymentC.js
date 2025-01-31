@@ -270,14 +270,14 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
 const getAllPayments = AsyncHandler(async (req, res) => {
   const payments = await Payment.find()
     .populate("class")
-    .populate("package") // Corrected path
+    .populate("package") 
     .populate({
       path: "package",
       populate: {
         path: "services",
       },
     })
-    .populate("user"); // Corrected path
+    .populate("user"); 
 
   res.status(200).json({
     success: true,
@@ -286,18 +286,27 @@ const getAllPayments = AsyncHandler(async (req, res) => {
   });
 });
 
-// Get a payment by ID
 const getPaymentById = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  if (!id) throw new Error("Please provide an ID");
+  if (!id) {
+    throw new Error("Please provide an ID");
+  }
 
-  const payment = await Payment.findById(id).populate(
-    "class booking user",
-    "title name amount"
-  );
+  const payment = await Payment.findById(id)
+    .populate("class")
+    .populate({
+      path: "package",
+      populate: {
+        path: "services",
+      },
+    })
+    .populate("user");
 
-  if (!payment) throw new Error("Payment not found with this ID");
+  if (!payment) {
+    res.status(404);
+    throw new Error("Payment not found with this ID");
+  }
 
   res.status(200).json({
     success: true,
@@ -305,6 +314,7 @@ const getPaymentById = AsyncHandler(async (req, res) => {
     data: payment,
   });
 });
+
 
 // Update a payment by ID
 const updatePayment = AsyncHandler(async (req, res) => {

@@ -12,7 +12,7 @@ const {
 router.get("/allocations", all);
 
 // Get a single location by ID
-router.get("locations/:id", getLocation, (req, res) => {
+router.get("/locations/:id", getLocation, (req, res) => {
   res.json(res.location);
 });
 
@@ -20,7 +20,7 @@ router.get("locations/:id", getLocation, (req, res) => {
 router.post("/locations", Create);
 
 // Update a location by ID
-router.put("locations/:id", getLocation, Update);
+router.put("/locations/:id", getLocation, Update);
 
 // Delete a location by ID
 router.delete("/locations/:id", Delete);
