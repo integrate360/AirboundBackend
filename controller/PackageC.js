@@ -44,7 +44,8 @@ const notifyPackageExpiry = AsyncHandler(async (req, res) => {
 
 // Create a new package
 const createPackage = AsyncHandler(async (req, res) => {
-  const { name, services, duration, price, days, description } = req.body;
+  const { name, services, duration, price, days, description, category } =
+    req.body;
 
   if (!name) throw new Error("Package name is required");
 
@@ -52,6 +53,7 @@ const createPackage = AsyncHandler(async (req, res) => {
     name,
     services,
     duration,
+    category,
     description,
     price,
     days,
@@ -64,7 +66,9 @@ const createPackage = AsyncHandler(async (req, res) => {
 
 // Get all packages
 const getPackages = AsyncHandler(async (req, res) => {
-  const packages = await Package.find().populate("services");
+  const packages = await Package.find()
+    .populate("services")
+    .populate("category");
   res
     .status(200)
     .json({ message: "Packages retrieved successfully", data: packages });
@@ -96,26 +100,15 @@ const getClassPackages = AsyncHandler(async (req, res) => {
 
 const getCategoryPackages = async (req, res) => {
   try {
-    const packages = await Package.find({}).populate({
+    const packages = await Package.find({ category: req.params.id }).populate({
       path: "services",
       populate: [
         { path: "availability.trainers", model: "Staff" },
         { path: "availability.locations", model: "Location" },
       ],
     });
-    let packageMap = new Map(); // HashMap to track unique packages
 
-    for (let pack of packages) {
-      if (pack?.services?.some((e) => e?.categoryId == req.body.id)) {
-        if (!packageMap.has(pack._id.toString())) {
-          packageMap.set(pack._id.toString(), pack);
-        }
-      }
-    }
-
-    res
-      .status(200)
-      .json({ success: true, packages: Array.from(packageMap.values()) });
+    res.status(200).json({ success: true, packages: packages });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
