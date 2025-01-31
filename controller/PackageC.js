@@ -94,6 +94,28 @@ const getClassPackages = AsyncHandler(async (req, res) => {
   }
 });
 
+const getCategoryPackages = async (req, res) => {
+  try {
+    const packages = await Package.find({});
+    let packageMap = new Map(); // HashMap to track unique packages
+
+    for (let pack of packages) {
+      if (pack?.services?.some((e) => e?.categoryId == req.body.id)) {
+        if (!packageMap.has(pack._id.toString())) {
+          packageMap.set(pack._id.toString(), pack);
+        }
+      }
+    }
+
+    res
+      .status(200)
+      .json({ success: true, packages: Array.from(packageMap.values()) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Get a single package by ID
 const getPackageById = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Package ID is required");
@@ -147,5 +169,6 @@ module.exports = {
   updatePackage,
   deletePackage,
   getClassPackages,
+  getCategoryPackages,
   notifyPackageExpiry,
 };
