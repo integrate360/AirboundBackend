@@ -1,7 +1,7 @@
 const mongoose = require("mongoose"); // Erase if already required
 
 // Declare the Schema of the Mongo model
-var PaymentSchema = new mongoose.Schema(
+const PaymentSchema = new mongoose.Schema(
   {
     class: {
       type: mongoose.Schema.Types.ObjectId,
