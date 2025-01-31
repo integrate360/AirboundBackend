@@ -96,7 +96,13 @@ const getClassPackages = AsyncHandler(async (req, res) => {
 
 const getCategoryPackages = async (req, res) => {
   try {
-    const packages = await Package.find({});
+    const packages = await Package.find({}).populate({
+      path: "services",
+      populate: [
+        { path: "availability.trainers", model: "Staff" },
+        { path: "availability.locations", model: "Location" },
+      ],
+    });
     let packageMap = new Map(); // HashMap to track unique packages
 
     for (let pack of packages) {
