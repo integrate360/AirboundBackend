@@ -5,7 +5,6 @@ const EnquirySchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     people: { type: Number },
     date: { type: Date },
-    location: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
   },
   { timestamps: true }
 );

@@ -9,7 +9,6 @@ const bacheloretteSchema = new mongoose.Schema(
     },
     people: { type: Number },
     date: { type: Date },
-    location: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
   },
   { timestamps: true }
 );
