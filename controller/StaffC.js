@@ -67,41 +67,47 @@ const updateStaff = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Validate ID
-  if (!id) throw new Error("Please provide an ID");
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Please provide an ID" });
+  }
 
-  let imgUrl = "";
+  try {
+    let imgUrl = "";
 
-  // Check if an image is uploaded and use the uploadImage function
-  if (req.file) {
-    try {
-      // Upload the image to AWS S3 using the uploadImage function
+    // Check if an image is uploaded
+    if (req.file) {
+      console.log("Uploading image:", req.file); // Debugging log to check file upload
       imgUrl = await uploadImage(req.file);
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      throw new Error("Image upload failed");
+      console.log("Image uploaded successfully:", imgUrl);
     }
+
+    // Prepare update object
+    const updateData = { ...req.body };
+
+    // If an image was uploaded, include the image URL in the update
+    if (imgUrl) {
+      updateData.image = imgUrl; // Ensure your Staff model has an `imageUrl` field
+    }
+
+    // Update the staff/category by ID
+    const updatedStaff = await Staff.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true, // Ensure validations run
+    });
+
+    if (!updatedStaff) {
+      return res.status(404).json({ success: false, message: "Staff not found with this ID" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Staff updated successfully",
+      data: updatedStaff,
+    });
+  } catch (error) {
+    console.error("Error updating staff:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
-  // Prepare update object
-  const updateData = { ...req.body };
-  
-  // If an image was uploaded, include the image URL in the update
-  if (imgUrl) {
-    updateData.imageUrl = imgUrl;  // Assuming you have an `imageUrl` field in your Staff model
-  }
-
-  // Update the staff/category by ID
-  const updatedStaff = await Staff.findByIdAndUpdate(id, updateData, {
-    new: true,
-  });
-
-  if (!updatedStaff) throw new Error("Staff not found with this ID");
-
-  res.status(200).json({
-    success: true,
-    message: "Staff updated successfully",
-    data: updatedStaff,
-  });
 });
 
 

@@ -23,11 +23,10 @@ router.post(
 router.get("/staff/", getAllStaffs);
 router.get("/getTotalStaffs", getTotalStaffs);
 router.get("/staff/:id", authMiddleware, isAdmin, getStaffById);
+
 router.put(
   "/staff/:id",
   upload.single("image"),
-  authMiddleware,
-  isAdmin,
   updateStaff
 );
 router.delete("/staff/:id", deleteStaff);
