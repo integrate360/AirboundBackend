@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-var StaffSchema = new mongoose.Schema(
+const StaffSchema = new mongoose.Schema(
   {
     name: { type: String },
     image: { type: String },
