@@ -14,7 +14,21 @@ const getAllPackages = async (req, res) => {
 const getPackageById = async (req, res) => {
   try {
     const { id } = req.params;
-    const bachelorette = await UserPackagesM.findById(id);
+    const bachelorette = await UserPackagesM.findById(id)
+      .populate("package")
+      .populate("bookings")
+      .populate({
+        path: "package",
+        populate: [
+          {
+            path: "services",
+            populate: [
+              { path: "availability.trainers", model: "Staff" },
+              { path: "availability.locations", model: "Location" },
+            ],
+          },
+        ],
+      });
     if (!bachelorette) {
       return res
         .status(404)
@@ -29,9 +43,7 @@ const getPackageById = async (req, res) => {
 const getPackageByUserId = async (req, res) => {
   try {
     const { id } = req.params;
-    const bachelorette = await UserPackagesM.find({ user: id })
-      .populate("package")
-      .populate("bookings");
+    const bachelorette = await UserPackagesM.find({ user: id });
     res.status(200).json({ success: true, data: bachelorette });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

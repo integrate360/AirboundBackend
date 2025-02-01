@@ -119,7 +119,13 @@ const getCategoryPackages = async (req, res) => {
 const getPackageById = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Package ID is required");
 
-  const package = await Package.findById(req.params.id).populate("services");
+  const package = await Package.findById(req.params.id).populate({
+    path: "services",
+    populate: [
+      { path: "availability.trainers", model: "Staff" },
+      { path: "availability.locations", model: "Location" },
+    ],
+  });
 
   if (!package) throw new Error("Package not found with this ID");
 
