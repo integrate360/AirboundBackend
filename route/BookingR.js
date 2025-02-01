@@ -20,10 +20,10 @@ router.post("/booking/", authMiddleware, createBooking);
 router.get("/bookings/", getAllBookings);
 router.get("/getTotalAmount", authMiddleware, isAdmin, getTotalAmount);
 router.get("/booking/:id", authMiddleware, getBookingById);
-router.post("/booking/availability", showAvailability);
 router.get("/booking/user/:id", authMiddleware, getBookingsByUser);
 router.get("/bookings/available-slots", availableSlots);
 router.put("/booking/reschedule/:id", authMiddleware, reschedule);
+router.post("/booking/availability/", showAvailability);
 router.put(
   "/booking/class/reschedule",
   authMiddleware,

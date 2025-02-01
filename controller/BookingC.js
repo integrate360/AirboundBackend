@@ -11,6 +11,7 @@ sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const admin = require("../config/firebaseConfig");
 const { sendEmailToUser } = require("../helper/EmailSender");
+const UserPackagesM = require("../model/UserPackagesM");
 
 // Define the logo URL (use the absolute URL of your logo image)
 const logoUrl =
@@ -115,7 +116,13 @@ const getAllBookings = AsyncHandler(async (req, res) => {
 });
 
 const createBooking = AsyncHandler(async (req, res) => {
-  const { class: classId, user: userId, dates, location } = req.body;
+  const {
+    class: classId,
+    user: userId,
+    dates,
+    location,
+    uPackageId,
+  } = req.body;
 
   // Validate required fields
   if (!classId || !userId || !dates || dates.length === 0) {
@@ -137,6 +144,15 @@ const createBooking = AsyncHandler(async (req, res) => {
     dates,
     location,
   });
+
+  const updateUserPackage = await UserPackagesM.findByIdAndUpdate(
+    uPackageId,
+    {
+      $push: { booking: newBooking?._id }, // Add new booking ID to the array
+      $inc: { slots: 1 }, // Increment slots by 1
+    },
+    { new: true } // Returns the updated document
+  );
 
   res.status(201).json({
     success: true,
@@ -627,6 +643,7 @@ const showAvailability = async (req, res) => {
   try {
     const { classId, date } = req.body;
     const localDate = moment(date, "DD-MM-YYYY").toISOString();
+
     // Validate input
     if (!classId || !date) {
       return res
@@ -635,42 +652,51 @@ const showAvailability = async (req, res) => {
     }
 
     // Fetch class details
-    const classes = await Class.findById(classId).populate({
-      path: "availability",
-      populate: [
-        { path: "trainers", model: "Staff" },
-        { path: "locations", model: "Location" },
-      ],
-    });
+    const classes = await Class.findById(classId)
+      .populate({
+        path: "availability",
+        populate: [
+          { path: "trainers", model: "Staff" },
+          { path: "locations", model: "Location" },
+        ],
+      })
+      .lean();
     if (!classes) {
       return res.status(404).json({ message: "Class not found." });
     }
 
+    // Get current time in IST
+    const currentTime = moment().utcOffset(330); // UTC+5:30 for IST
+    const requestedDate = moment(date, "DD-MM-YYYY");
+
     // Get availability slots for the given day
-    const day = moment(date, "DD-MM-YYYY").day();
+    const day = requestedDate.day();
     const daySlots = classes.availability.filter((slot) => {
-      return slot?.day === day;
+      // If it's a different date, include all slots
+      if (!requestedDate.isSame(currentTime, "day")) {
+        return slot?.day === day;
+      }
+
+      // For today, filter slots that are at least 3 hours ahead
+      const slotTime = moment(date + " " + slot.time, "DD-MM-YYYY HH:mm");
+      const hoursDifference = slotTime.diff(currentTime, "hours", true);
+
+      return slot?.day === day && hoursDifference >= 3;
     });
 
     // Fetch bookings for the class on the given date
     const bookings = await Booking.find({ class: classId });
     const formattedBookings = bookings.filter((booking) =>
       booking.dates.some((dbDate) => {
-        const adjustedDate = moment(dbDate).utcOffset(35).format("DD-MM-YYYY"); // Adjusting to IST (UTC+5:5)
+        const adjustedDate = moment(dbDate).utcOffset(330).format("DD-MM-YYYY"); // Adjusting to IST
         return adjustedDate === date;
       })
     );
-    console.log(
-      bookings.length,
-      formattedBookings?.length,
-      formattedBookings[0]?.dates,
-      localDate,
-      date
-    );
+
     // Update the slots with the current number of people booked
     const updatedSlots = daySlots?.map((slot) => {
       let count = 0;
-      const slotBookings = formattedBookings.filter((booking) => {
+      const slotBookings = formattedBookings?.filter((booking) => {
         count += booking?.people;
         return booking.time === slot?.time;
       });
@@ -687,7 +713,7 @@ const showAvailability = async (req, res) => {
     });
 
     res.status(200).json({
-      available: true,
+      available: updatedSlots.length > 0,
       slots: updatedSlots,
     });
   } catch (error) {

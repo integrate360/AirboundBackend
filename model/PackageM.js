@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var PackageSchema = new mongoose.Schema(
+const PackageSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -10,6 +10,7 @@ var PackageSchema = new mongoose.Schema(
     services: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     ],
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     duration: { type: Number, required: true },
     price: { type: Number, required: true },
     offerPrice: { type: Number },

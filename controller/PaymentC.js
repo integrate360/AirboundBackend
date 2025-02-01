@@ -3,6 +3,7 @@ const Payment = require("../model/PaymentM");
 const Booking = require("../model/BookingM");
 const Class = require("../model/ClassM");
 const User = require("../model/UserM");
+const { v4: uuid } = require("uuid");
 const Razorpay = require("razorpay");
 const moment = require("moment");
 const razorpay = new Razorpay({
@@ -12,6 +13,7 @@ const razorpay = new Razorpay({
 
 const { sendInvoiceToUser } = require("../helper/Invoice");
 const PackageM = require("../model/PackageM");
+const UserPackagesM = require("../model/UserPackagesM");
 
 // Create a payment
 // const createPayment = AsyncHandler(async (req, res) => {
@@ -190,6 +192,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
       .status(400)
       .json({ message: "Booking, user, and amount are required" });
   }
+  const UniqueId = uuid();
 
   // Validate references
   const classExists = await PackageM.findById(package);
@@ -212,6 +215,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
 
   // Create bookings and use aggregation to populate location
   try {
+    let bookingIds = []; //storing the booking id for userPackages
     const bookingPromises = bookings?.map(async (book) => {
       const newBooking = new Booking({
         ...book,
@@ -222,12 +226,30 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
         time: book?.time,
         duration: book?.classDuration,
         package,
+        uuid: UniqueId,
       });
       await newBooking.save();
+      bookingIds.push(newBooking?._id);
       return newBooking;
     });
 
     const createdBookings = await Promise.all(bookingPromises);
+
+    // Create User Package History
+    try {
+      const userPackage = new UserPackagesM({
+        uuid: UniqueId,
+        bookings: bookingIds,
+        package,
+        price: amount,
+        slots: bookingIds?.length,
+        totalSlots: classExists?.days,
+      });
+      await userPackage.save();
+    } catch (error) {
+      console.log("Error Creating User Package" + error);
+      return res.status(300).json({ message: error.message });
+    }
     // Send invoice email to the user
     try {
       const bookingDetails = {
@@ -270,14 +292,14 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
 const getAllPayments = AsyncHandler(async (req, res) => {
   const payments = await Payment.find()
     .populate("class")
-    .populate("package") 
+    .populate("package")
     .populate({
       path: "package",
       populate: {
         path: "services",
       },
     })
-    .populate("user"); 
+    .populate("user");
 
   res.status(200).json({
     success: true,
@@ -314,7 +336,6 @@ const getPaymentById = AsyncHandler(async (req, res) => {
     data: payment,
   });
 });
-
 
 // Update a payment by ID
 const updatePayment = AsyncHandler(async (req, res) => {
