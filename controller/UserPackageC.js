@@ -43,7 +43,9 @@ const getPackageById = async (req, res) => {
 const getPackageByUserId = async (req, res) => {
   try {
     const { id } = req.params;
-    const bachelorette = await UserPackagesM.find({ user: id });
+    const bachelorette = await UserPackagesM.find({ user: id }).populate(
+      "package"
+    );
     res.status(200).json({ success: true, data: bachelorette });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
