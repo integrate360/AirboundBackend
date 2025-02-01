@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var PackageSchema = new mongoose.Schema(
+const PackageSchema = new mongoose.Schema(
   {
     name: {
       type: String,

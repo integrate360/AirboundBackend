@@ -22,6 +22,7 @@ const BookingSchema = new mongoose.Schema(
         type: Date,
       },
     ],
+    uuid: { type: String },
     location: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Location",
