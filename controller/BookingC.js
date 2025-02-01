@@ -11,6 +11,7 @@ sgMail.setApiKey(process.env.Sendgrid_Key);
 
 const admin = require("../config/firebaseConfig");
 const { sendEmailToUser } = require("../helper/EmailSender");
+const UserPackagesM = require("../model/UserPackagesM");
 
 // Define the logo URL (use the absolute URL of your logo image)
 const logoUrl =
@@ -115,7 +116,13 @@ const getAllBookings = AsyncHandler(async (req, res) => {
 });
 
 const createBooking = AsyncHandler(async (req, res) => {
-  const { class: classId, user: userId, dates, location } = req.body;
+  const {
+    class: classId,
+    user: userId,
+    dates,
+    location,
+    uPackageId,
+  } = req.body;
 
   // Validate required fields
   if (!classId || !userId || !dates || dates.length === 0) {
@@ -137,6 +144,15 @@ const createBooking = AsyncHandler(async (req, res) => {
     dates,
     location,
   });
+
+  const updateUserPackage = await UserPackagesM.findByIdAndUpdate(
+    uPackageId,
+    {
+      $push: { booking: newBooking?._id }, // Add new booking ID to the array
+      $inc: { slots: 1 }, // Increment slots by 1
+    },
+    { new: true } // Returns the updated document
+  );
 
   res.status(201).json({
     success: true,
