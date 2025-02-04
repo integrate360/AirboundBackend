@@ -175,10 +175,10 @@ const createMultipleBookings = AsyncHandler(async (req, res) => {
     // Use Promise.all to create bookings in parallel
     const bookingPromises = bookings.map((book) =>
       Booking.create({
-        class: book.class,
+        class: book.classId,
         user: book.user,
         dates: book.dates,
-        location: book.location,
+        location: book?.location?._id,
       })
     );
 
