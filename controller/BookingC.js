@@ -186,12 +186,13 @@ const createMultipleBookings = AsyncHandler(async (req, res) => {
 
     // Get all booking IDs
     const bookingIds = createdBookings.map((booking) => booking._id);
+    console.log({ bookingIds });
 
     // Update user package once with all booking IDs
     const updateUserPackage = await UserPackagesM.findByIdAndUpdate(
       uPackageId,
       {
-        $push: { booking: { $each: bookingIds } },
+        $push: { bookings: { $each: bookingIds } },
         $inc: { slots: bookings.length },
       },
       {
