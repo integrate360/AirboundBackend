@@ -12,11 +12,13 @@ const {
   reschedule,
   showAvailability,
   sendNotificationToUsers,
+  createMultipleBookings,
 } = require("../controller/BookingC");
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
 
 // Routes
 router.post("/booking/", authMiddleware, createBooking);
+router.post("/booking/multiple", authMiddleware, createMultipleBookings);
 router.get("/bookings/", getAllBookings);
 router.get("/getTotalAmount", authMiddleware, isAdmin, getTotalAmount);
 router.get("/booking/:id", authMiddleware, getBookingById);
