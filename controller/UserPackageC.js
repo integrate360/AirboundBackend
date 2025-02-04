@@ -18,6 +18,15 @@ const getPackageById = async (req, res) => {
       .populate("package")
       .populate("bookings")
       .populate({
+        path: "bookings",
+        populate: [
+          {
+            path: "class",
+            path: "location",
+          },
+        ],
+      })
+      .populate({
         path: "package",
         populate: [
           {

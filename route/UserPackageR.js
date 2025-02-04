@@ -12,6 +12,6 @@ const upload = multer({ storage: storage });
 
 router.get("/user-package", authMiddleware, isAdmin, getAllPackages);
 router.get("/user-package/:id", authMiddleware, getPackageById);
-router.get("/user-package/user/:id/", getPackageByUserId);
+router.get("/user-package/user/:id/", authMiddleware, getPackageByUserId);
 
 module.exports = router;
