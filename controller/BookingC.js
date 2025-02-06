@@ -649,7 +649,7 @@ const reschedule = AsyncHandler(async (req, res) => {
     bookingData.dates.splice(index, 1, new Date(newDate));
     await Booking.findByIdAndUpdate(
       id,
-      { dates: bookingData.dates },
+      { ...req.body, dates: bookingData.dates },
       { new: true }
     );
 
