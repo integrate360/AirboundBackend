@@ -103,28 +103,21 @@ const getCategoryById = AsyncHandler(async (req, res) => {
 
 const updateCategory = AsyncHandler(async (req, res) => {
   const { id } = req.params;
-
-  // Validate ID
   if (!id) {
     return res.status(400).json({ success: false, message: "Please provide an ID" });
   }
 
   try {
     let updateData = { ...req.body };
-
-    // Check if an image is uploaded
     if (req.file) {
       try {
-        // Upload the image to AWS S3 and get the URL
         const imgUrl = await uploadImage(req.file);
-        updateData.image = imgUrl; // Add the new image URL to update data
+        updateData.image = imgUrl; 
       } catch (err) {
         console.error("Image upload failed:", err);
         return res.status(500).json({ success: false, message: "Image upload failed" });
       }
     }
-
-    // Update category with new data
     const updatedCategory = await Category.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
@@ -146,11 +139,10 @@ const updateCategory = AsyncHandler(async (req, res) => {
 });
 
 
-// Delete a category by ID
 const deleteCategory = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // Validate ID
+  
   if (!id) throw new Error("Please provide an ID");
 
   const deletedCategory = await Category.findByIdAndDelete(id);

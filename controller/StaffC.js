@@ -1,6 +1,6 @@
 const AsyncHandler = require("express-async-handler");
 const Staff = require("../model/StaffM");
-const  {uploadImage}  = require("../helper/fileUploadeService");
+const { uploadImage } = require("../helper/fileUploadeService");
 // Create a category
 const createStaff = AsyncHandler(async (req, res) => {
   const { name, description } = req.body;
@@ -68,35 +68,32 @@ const updateStaff = AsyncHandler(async (req, res) => {
 
   // Validate ID
   if (!id) {
-    return res.status(400).json({ success: false, message: "Please provide an ID" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Please provide an ID" });
   }
 
   try {
     let imgUrl = "";
-
-    // Check if an image is uploaded
     if (req.file) {
-      console.log("Uploading image:", req.file); // Debugging log to check file upload
+      console.log("Uploading image:", req.file); 
       imgUrl = await uploadImage(req.file);
       console.log("Image uploaded successfully:", imgUrl);
     }
 
-    // Prepare update object
     const updateData = { ...req.body };
-
-    // If an image was uploaded, include the image URL in the update
     if (imgUrl) {
-      updateData.image = imgUrl; // Ensure your Staff model has an `imageUrl` field
+      updateData.image = imgUrl; 
     }
-
-    // Update the staff/category by ID
     const updatedStaff = await Staff.findByIdAndUpdate(id, updateData, {
       new: true,
-      runValidators: true, // Ensure validations run
+      runValidators: true, 
     });
 
     if (!updatedStaff) {
-      return res.status(404).json({ success: false, message: "Staff not found with this ID" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Staff not found with this ID" });
     }
 
     res.status(200).json({
@@ -110,12 +107,8 @@ const updateStaff = AsyncHandler(async (req, res) => {
   }
 });
 
-
-// Delete a category by ID
 const deleteStaff = AsyncHandler(async (req, res) => {
   const { id } = req.params;
-
-  // Validate ID
   if (!id) throw new Error("Please provide an ID");
 
   const deletedStaff = await Staff.findByIdAndDelete(id);
