@@ -119,13 +119,26 @@ const getCategoryPackages = async (req, res) => {
 const getPackageById = AsyncHandler(async (req, res) => {
   if (!req.params.id) throw new Error("Package ID is required");
 
-  const package = await Package.findById(req.params.id).populate("services");
+  try {
+    const package = await Package.findById(req.params.id).populate({
+      path: "services",
+      populate: [
+        { path: "availability.trainers", model: "Staff" },
+        { path: "availability.locations", model: "Location" },
+      ],
+    });
 
-  if (!package) throw new Error("Package not found with this ID");
+    if (!package)
+      return res
+        .status(300)
+        .json({ message: "Package not found with this ID" });
 
-  res
-    .status(200)
-    .json({ message: "Package retrieved successfully", data: package });
+    res
+      .status(200)
+      .json({ message: "Package retrieved successfully", data: package });
+  } catch (error) {
+    res.status(300).json({ message: error.message });
+  }
 });
 
 // Update a package

@@ -161,6 +161,77 @@ const createBooking = AsyncHandler(async (req, res) => {
   });
 });
 
+const createMultipleBookings = AsyncHandler(async (req, res) => {
+  const { bookings, uPackageId } = req.body;
+
+  if (!bookings || !Array.isArray(bookings) || bookings.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide valid bookings array",
+    });
+  }
+
+  try {
+    // Use Promise.all to create bookings in parallel
+    const bookingPromises = bookings.map((book) =>
+      Booking.create({
+        class: book.classId,
+        user: book.user,
+        dates: book.dates,
+        location: book?.location?._id,
+      })
+    );
+
+    const createdBookings = await Promise.all(bookingPromises);
+
+    // Get all booking IDs
+    const bookingIds = createdBookings.map((booking) => booking._id);
+    console.log({ bookingIds });
+
+    // Update user package once with all booking IDs
+    const updateUserPackage = await UserPackagesM.findByIdAndUpdate(
+      uPackageId,
+      {
+        $push: { bookings: { $each: bookingIds } },
+        $inc: { slots: bookings.length },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updateUserPackage) {
+      // If package update fails, delete the created bookings
+      await Booking.deleteMany({ _id: { $in: bookingIds } });
+      return res.status(404).json({
+        success: false,
+        message: "User package not found",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Bookings created successfully",
+      data: {
+        bookings: createdBookings,
+        updatedPackage: updateUserPackage,
+      },
+    });
+  } catch (error) {
+    // If any operation fails, ensure we clean up any created bookings
+    if (error.bookingIds) {
+      await Booking.deleteMany({ _id: { $in: error.bookingIds } });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Error creating bookings",
+      error: error.message,
+    });
+  }
+});
+
 const getTotalAmount = AsyncHandler(async (req, res) => {
   try {
     // Fetch all bookings
@@ -578,7 +649,7 @@ const reschedule = AsyncHandler(async (req, res) => {
     bookingData.dates.splice(index, 1, new Date(newDate));
     await Booking.findByIdAndUpdate(
       id,
-      { dates: bookingData.dates },
+      { ...req.body, dates: bookingData.dates },
       { new: true }
     );
 
@@ -728,6 +799,7 @@ module.exports = {
   createBooking,
   getAllBookings,
   getBookingById,
+  createMultipleBookings,
   updateBooking,
   deleteBooking,
   getBookingsByUser,

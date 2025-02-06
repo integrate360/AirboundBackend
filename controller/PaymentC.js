@@ -244,6 +244,7 @@ const createPackagePayment = AsyncHandler(async (req, res) => {
         price: amount,
         slots: bookingIds?.length,
         totalSlots: classExists?.days,
+        user,
       });
       await userPackage.save();
     } catch (error) {
